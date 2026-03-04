@@ -1010,7 +1010,6 @@
                                 <th
                                     class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                     Prova</th>
-                                <th class="px-5 py-3 w-8"></th>
                             </tr>
                         </thead>
                         <tbody id="tableBody" class="divide-y divide-gray-50 bg-white"></tbody>
@@ -2407,7 +2406,7 @@
                 tl.classList.add('hidden'); tl.classList.remove('flex');
             }
             if (data.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="9" class="px-5 py-12 text-center text-gray-400 text-sm">${search ? 'Nenhum resultado encontrado.' : 'Nenhum registro ainda. Adicione o primeiro acima!'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="px-5 py-12 text-center text-gray-400 text-sm">${search ? 'Nenhum resultado encontrado.' : 'Nenhum registro ainda. Adicione o primeiro acima!'}</td></tr>`;
                 return;
             }
             tableBody.innerHTML = data.map((log, i) => {
@@ -2441,7 +2440,7 @@
             <td class="px-5 py-3 whitespace-nowrap">${pctBadge}</td>
             <td class="px-5 py-3 whitespace-nowrap">${statusBadge}</td>
             <td class="px-5 py-3 whitespace-nowrap">${notesCell}</td>
-            <td class="px-5 py-3 whitespace-nowrap">${log.image ? `<button onclick="showImage('${log.image}')" class="text-blue-500 hover:text-blue-700 text-xs font-semibold underline">Ver Print</button>` : `<span class="text-gray-300 text-xs">—</span>`}</td>
+            <td class="px-5 py-3 whitespace-nowrap">${log.image ? `<button onclick="showImageById(${log.id})" class="text-blue-500 hover:text-blue-700 text-xs font-semibold underline">Ver Print</button>` : `<span class="text-gray-300 text-xs">—</span>`}</td>
         </tr>`;
             }).join('');
         }
@@ -2616,6 +2615,14 @@
         // ── UTILS ─────────────────────────────────────────────────────────────────────
         function fmtDate(d) { const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
 
+        // Mostra imagem buscando pelo id do log (evita colocar base64 gigante no onclick)
+        window.showImageById = function (logId) {
+            const entry = logs.find(l => l.id === logId);
+            if (entry && entry.image) {
+                document.getElementById('modalImg').src = entry.image;
+                document.getElementById('imageModal').classList.remove('hidden');
+            }
+        };
         window.showImage = src => {
             document.getElementById('modalImg').src = src;
             document.getElementById('imageModal').classList.remove('hidden');
@@ -2627,7 +2634,7 @@
 
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
-            document.getElementById('toastMessage').textContent = msg;
+            document.getElementById('toastMessage').innerHTML = msg;
             document.getElementById('toastIcon').innerHTML = type === 'success'
                 ? `<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`
                 : `<svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
@@ -2724,25 +2731,47 @@
         };
 
         window.doLogout = function () {
-            if (!confirm(`Sair de ${currentStore?.name}?`)) return;
-            // Cancela listener Firebase
-            if (fbListener) { fbListener.off(); fbListener = null; }
+            const storeName = currentStore ? currentStore.name : 'loja';
+            if (!confirm(`Sair de ${storeName}?`)) return;
+            // Cancela listener Firestore (onSnapshot retorna função de unsubscribe)
+            try { if (fbListener) { fbListener(); fbListener = null; } } catch (e) { fbListener = null; }
             currentStore = null;
             selectedStoreId = null;
             logs = [];
-            // Reseta charts
-            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
-            if (donutInstance) { donutInstance.destroy(); donutInstance = null; }
+            // Reseta estado da data desbloqueada
+            if (dateUnlocked) { dateUnlocked = false; }
+            // Limpa header stats e weekly bar
+            const hs = document.getElementById('headerStats');
+            if (hs) hs.classList.add('hidden');
+            const wb = document.getElementById('weeklyBar');
+            if (wb) wb.classList.add('hidden');
+            const hb = document.getElementById('healthBadge');
+            if (hb) hb.classList.add('hidden');
+            const kpi = document.getElementById('kpiRow');
+            if (kpi) kpi.innerHTML = '';
+            if (tableBody) tableBody.innerHTML = '';
+            // Reseta charts com segurança
+            try { if (chartInstance) { chartInstance.destroy(); chartInstance = null; } } catch (e) { chartInstance = null; }
+            try { if (donutInstance) { donutInstance.destroy(); donutInstance = null; } } catch (e) { donutInstance = null; }
+            // Limpa canvas do chart para evitar erro "Canvas already in use"
+            const mainChartEl = document.getElementById('mainChart');
+            if (mainChartEl) { mainChartEl.getContext('2d').clearRect(0, 0, mainChartEl.width, mainChartEl.height); }
             // Mostra tela de login
             const loginScreen = document.getElementById('loginScreen');
-            loginScreen.style.display = 'flex';
-            loginScreen.style.opacity = '0';
-            loginScreen.style.transition = 'opacity 0.4s ease';
-            setTimeout(() => loginScreen.style.opacity = '1', 10);
-            document.getElementById('passwordStep').classList.add('hidden');
-            document.getElementById('storeStep').classList.remove('hidden');
-            document.getElementById('storeBadge').classList.add('hidden');
-            document.getElementById('loginPwInput').value = '';
+            if (loginScreen) {
+                loginScreen.style.display = 'flex';
+                loginScreen.style.opacity = '0';
+                loginScreen.style.transition = 'opacity 0.4s ease';
+                setTimeout(() => loginScreen.style.opacity = '1', 10);
+            }
+            const pwStep = document.getElementById('passwordStep');
+            const storeStep = document.getElementById('storeStep');
+            if (pwStep) pwStep.classList.add('hidden');
+            if (storeStep) storeStep.classList.remove('hidden');
+            const badge = document.getElementById('storeBadge');
+            if (badge) badge.classList.add('hidden');
+            const pwInput = document.getElementById('loginPwInput');
+            if (pwInput) pwInput.value = '';
             document.title = 'Monitor de Avaliações - Google';
         };
 
