@@ -363,6 +363,167 @@
             border-color: #818cf8;
             background: #1e1b4b;
         }
+
+        /* ── RESPONSIVE / MOBILE ─────────────────────────────────────────────── */
+
+        /* Mobile bottom nav */
+        .mobile-bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        html.dark .mobile-bottom-bar {
+            background: rgba(15, 23, 42, 0.92);
+            border-color: #334155;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .mobile-bottom-bar button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.15s;
+            min-width: 56px;
+        }
+
+        .mobile-bottom-bar button:active {
+            transform: scale(0.92);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        html.dark .mobile-bottom-bar button {
+            color: #94a3b8;
+        }
+
+        /* Mobile cards for table */
+        .mobile-cards {
+            display: none;
+        }
+
+        .mobile-card {
+            border-radius: 16px;
+            border: 1px solid #e8edf2;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            transition: transform 0.2s;
+        }
+
+        .mobile-card:active {
+            transform: scale(0.98);
+        }
+
+        .mobile-card.card-drop {
+            background: #fff5f5;
+            border-color: #fecaca;
+        }
+
+        .mobile-card.card-gain {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        html.dark .mobile-card {
+            background: #1e293b;
+            border-color: #334155;
+        }
+
+        html.dark .mobile-card.card-drop {
+            background: #2d1515;
+            border-color: #5c2020;
+        }
+
+        html.dark .mobile-card.card-gain {
+            background: #0d2d1a;
+            border-color: #1a5c32;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-bottom-bar {
+                display: flex;
+            }
+
+            /* Add padding at bottom for the fixed bottom bar */
+            body {
+                padding-bottom: 72px;
+            }
+
+            /* Toast: center on mobile */
+            #toast {
+                right: 50% !important;
+                transform: translateX(50%) translateY(80px) !important;
+                bottom: 80px !important;
+            }
+
+            #toast:not(.translate-y-20) {
+                transform: translateX(50%) translateY(0) !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .mobile-cards {
+                display: block;
+            }
+
+            .desktop-table {
+                display: none;
+            }
+
+            /* Compact KPI cards */
+            .kpi-card {
+                padding: 12px !important;
+            }
+
+            .kpi-card .text-2xl {
+                font-size: 1.25rem !important;
+            }
+
+            /* Header compact */
+            header .text-sm {
+                font-size: 0.8rem !important;
+            }
+
+            /* Smaller donut on mobile */
+            .donut-wrapper {
+                width: 170px !important;
+                height: 170px !important;
+            }
+
+            .donut-wrapper .font-black {
+                font-size: 2.25rem !important;
+            }
+
+            /* Chart filter buttons: scroll horizontal */
+            .chart-controls {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .chart-controls::-webkit-scrollbar {
+                display: none;
+            }
+        }
     </style>
 </head>
 
@@ -466,7 +627,7 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-bold text-gray-900 leading-tight">Monitor de Avaliações</h1>
-                    <p class="text-xs text-gray-400 leading-none">Google Meu Negócio</p>
+                    <p class="text-xs text-gray-400 leading-none hidden sm:block">Google Meu Negócio</p>
                 </div>
             </div>
 
@@ -536,9 +697,9 @@
                 </button>
                 <!-- Store badge + Logout -->
                 <div id="storeBadge"
-                    class="hidden items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 text-xs font-bold">
+                    class="hidden items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 text-xs font-bold">
                     <span id="storeBadgeIcon"></span>
-                    <span id="storeBadgeName"></span>
+                    <span id="storeBadgeName" class="hidden sm:inline"></span>
                 </div>
                 <button onclick="doLogout()" title="Sair"
                     class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition-colors">
@@ -841,7 +1002,7 @@
                                 Previsão
                             </label>
                         </div>
-                        <div class="flex items-center gap-2 flex-wrap">
+                        <div class="flex items-center gap-2 flex-wrap chart-controls">
                             <!-- Period filter -->
                             <div class="flex gap-0.5 bg-gray-100 p-1 rounded-lg">
                                 <button class="filter-btn active text-xs font-semibold px-2.5 py-1"
@@ -883,7 +1044,7 @@
 
                     <!-- Donut + centro -->
                     <div class="flex items-center justify-center flex-1">
-                        <div class="relative" style="width:210px;height:210px;flex-shrink:0;">
+                        <div class="relative donut-wrapper" style="width:210px;height:210px;flex-shrink:0;">
                             <canvas id="donutChart" width="210" height="210"></canvas>
                             <!-- Centro do donut: dias monitorados em destaque -->
                             <div
@@ -984,8 +1145,8 @@
                     </div>
                 </div>
 
-                <!-- Table -->
-                <div class="overflow-x-auto">
+                <!-- Table (desktop) -->
+                <div class="overflow-x-auto desktop-table">
                     <table class="min-w-full text-sm">
                         <thead class="bg-gray-50 border-b border-gray-100">
                             <tr>
@@ -1015,6 +1176,9 @@
                         <tbody id="tableBody" class="divide-y divide-gray-50 bg-white"></tbody>
                     </table>
                 </div>
+
+                <!-- Mobile Cards (shown on small screens) -->
+                <div id="mobileCards" class="mobile-cards px-4 py-3"></div>
             </div>
 
         </section>
@@ -1119,6 +1283,45 @@
                     class="flex-1 py-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors shadow-sm">Desbloquear</button>
             </div>
         </div>
+    </div>
+
+    <!-- Mobile Bottom Bar -->
+    <div class="mobile-bottom-bar md:hidden" id="mobileBottomBar">
+        <button onclick="shareResume()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+            Compartilhar
+        </button>
+        <button onclick="exportPDF()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+            </svg>
+            PDF
+        </button>
+        <button onclick="exportCSV()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            CSV
+        </button>
+        <button onclick="toggleDark()">
+            <svg id="darkIconMobile" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            Tema
+        </button>
     </div>
 
     <!-- Toast -->
@@ -1406,14 +1609,20 @@
 
         // ── DARK MODE ─────────────────────────────────────────────────────────────────
         function applyDark(on) {
+            const sunIcon = '<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707"/><circle cx="12" cy="12" r="4"/>';
+            const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
             if (on) {
                 document.documentElement.classList.add('dark');
                 document.body.style.backgroundColor = '#0f172a';
-                document.getElementById('darkIcon').innerHTML = '<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707"/><circle cx="12" cy="12" r="4"/>';
+                document.getElementById('darkIcon').innerHTML = sunIcon;
+                const mobileIcon = document.getElementById('darkIconMobile');
+                if (mobileIcon) mobileIcon.innerHTML = sunIcon;
             } else {
                 document.documentElement.classList.remove('dark');
                 document.body.style.backgroundColor = '#f0f4f8';
-                document.getElementById('darkIcon').innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+                document.getElementById('darkIcon').innerHTML = moonIcon;
+                const mobileIcon = document.getElementById('darkIconMobile');
+                if (mobileIcon) mobileIcon.innerHTML = moonIcon;
             }
         }
         window.toggleDark = function () {
@@ -2284,8 +2493,16 @@
             if (total === 0) return;
 
             const canvas = document.getElementById('donutChart');
-            canvas.width = 210;
-            canvas.height = 210;
+            const isMobile = window.innerWidth <= 640;
+            const donutSize = isMobile ? 170 : 210;
+            canvas.width = donutSize;
+            canvas.height = donutSize;
+            // Update wrapper size for mobile
+            const wrapper = canvas.closest('.donut-wrapper');
+            if (wrapper) {
+                wrapper.style.width = donutSize + 'px';
+                wrapper.style.height = donutSize + 'px';
+            }
 
             donutInstance = new Chart(ctx, {
                 type: 'doughnut',
@@ -2407,6 +2624,8 @@
             }
             if (data.length === 0) {
                 tableBody.innerHTML = `<tr><td colspan="8" class="px-5 py-12 text-center text-gray-400 text-sm">${search ? 'Nenhum resultado encontrado.' : 'Nenhum registro ainda. Adicione o primeiro acima!'}</td></tr>`;
+                const mc = document.getElementById('mobileCards');
+                if (mc) mc.innerHTML = `<div class="text-center text-gray-400 text-sm py-8">${search ? 'Nenhum resultado encontrado.' : 'Nenhum registro ainda.'}</div>`;
                 return;
             }
             tableBody.innerHTML = data.map((log, i) => {
@@ -2443,6 +2662,57 @@
             <td class="px-5 py-3 whitespace-nowrap">${log.image ? `<button onclick="showImageById(${log.id})" class="text-blue-500 hover:text-blue-700 text-xs font-semibold underline">Ver Print</button>` : `<span class="text-gray-300 text-xs">—</span>`}</td>
         </tr>`;
             }).join('');
+
+            // ── Mobile Cards ──
+            const mc = document.getElementById('mobileCards');
+            if (mc) {
+                mc.innerHTML = data.map((log, i) => {
+                    const isDrop = log.diff < 0, isGain = log.diff > 0;
+                    const cardCls = isDrop ? 'card-drop' : isGain ? 'card-gain' : '';
+                    const statusEmoji = isDrop ? '🔻' : isGain ? '📈' : '●';
+                    const statusText = isDrop ? 'Queda' : isGain ? 'Ganho' : 'Neutro';
+                    const statusColor = isDrop ? 'text-red-600' : isGain ? 'text-green-600' : 'text-gray-400';
+                    const diffText = log.diff !== 0
+                        ? `<span class="font-bold ${isDrop ? 'text-red-600' : 'text-green-600'}">${log.diff > 0 ? '+' : ''}${log.diff}</span>`
+                        : `<span class="text-gray-400">—</span>`;
+                    const pctText = log.pct !== 0 && log.pct !== undefined
+                        ? `<span class="${isDrop ? 'text-red-500' : 'text-green-600'}">(${log.pct > 0 ? '+' : ''}${log.pct}%)</span>`
+                        : '';
+                    const ratingText = log.rating
+                        ? `<span class="text-amber-500 font-semibold">${log.rating} ★</span>`
+                        : `<span class="text-gray-300">—</span>`;
+                    const actions = [];
+                    if (log.notes) actions.push(`<button onclick="showNotes('${encodeURIComponent(log.notes)}')" class="text-xs text-blue-500 font-semibold">📝 Obs</button>`);
+                    if (log.image) actions.push(`<button onclick="showImageById(${log.id})" class="text-xs text-blue-500 font-semibold">🖼️ Print</button>`);
+
+                    return `<div class="mobile-card ${cardCls} fade-up" style="animation-delay:${i * 20}ms">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold text-gray-800">${fmtDate(log.date).substring(0, 5)}</span>
+                                <span class="text-xs text-gray-400">${log.time || ''}</span>
+                            </div>
+                            <span class="text-xs font-bold ${statusColor}">${statusEmoji} ${statusText}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div>
+                                    <div class="text-xs text-gray-400">Total</div>
+                                    <div class="text-lg font-black text-gray-900">${log.total.toLocaleString()}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-400">Variação</div>
+                                    <div class="text-sm font-semibold">${diffText} ${pctText}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-400">Nota</div>
+                                    <div class="text-sm">${ratingText}</div>
+                                </div>
+                            </div>
+                            ${actions.length > 0 ? `<div class="flex items-center gap-2">${actions.join('')}</div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
         }
 
         // ── INSIGHTS ──────────────────────────────────────────────────────────────────
