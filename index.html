@@ -7,6 +7,7 @@
     <title>Monitor de Avaliações - Google</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- Firebase Cloud Firestore (compat CDN) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -728,8 +729,8 @@
         let fbListener = null;
 
         // ── API KEYS ─────────────────────────────────────────────────────────────────
-        const GROQ_KEY = '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';
-        const OPENROUTER_KEY = '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';
+        const GROQ_KEY = '';
+        const OPENROUTER_KEY = '';
 
         // ── PASSWORD ─────────────────────────────────────────────────────────────────
         const _a = ['#', 'B', 'a', 'n', 'a', 'n', 'a', '@', '1', '0'];
@@ -1125,55 +1126,81 @@
             let source = '';
             let lastError = '';
 
-            // ── ETAPA 1: Groq ────────────────────────────────────────────────────────
-            const GROQ_MODELS = [
-                'meta-llama/llama-4-scout-17b-16e-instruct',
-                'meta-llama/llama-4-maverick-17b-128e-instruct',
-                'llava-v1.5-7b-4096-preview',
-            ];
+            // ── ETAPA 0: Tesseract.js (OCR local, sem API) ───────────────────────────
+            showAiStatus('<span class="loader" style="width:13px;height:13px;border-width:2px;margin-right:4px;"></span>OCR local (Tesseract.js)...', 'loading');
+            try {
+                const { data: { text } } = await Tesseract.recognize(currentBase64Image, 'por+eng');
 
-            for (const gModel of GROQ_MODELS) {
-                showAiStatus(`<span class="loader" style="width:13px;height:13px;border-width:2px;margin-right:4px;border-top-color:#f55036"></span>1/2 Groq: <strong>${gModel}</strong>...`, 'loading');
-                try {
-                    const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
-                        body: JSON.stringify({
-                            model: gModel,
-                            temperature: 0.1,
-                            max_tokens: 200,
-                            messages: [{
-                                role: 'user',
-                                content: [
-                                    { type: 'text', text: AI_PROMPT },
-                                    { type: 'image_url', image_url: { url: currentBase64Image } }
-                                ]
-                            }]
-                        })
-                    });
+                // Rating: número decimal 1,X – 5,X (vírgula pt-BR ou ponto en-US)
+                const ratingMatch = text.match(/\b([1-5][,.](\d))\b/);
+                const ocrRating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
 
-                    if (groqResp.status === 401) { lastError = 'Chave Groq inválida (401).'; break; }
-                    if (groqResp.status === 429) { lastError = 'Rate limit Groq (429).'; break; }
-                    if (groqResp.status === 400 || groqResp.status === 404) {
-                        const eb = await groqResp.json().catch(() => ({}));
-                        lastError = eb?.error?.message || `Groq: modelo ${gModel} indisponível.`;
-                        continue;
-                    }
-                    if (!groqResp.ok) {
-                        const eb = await groqResp.json().catch(() => ({}));
-                        lastError = eb?.error?.message || `Groq erro ${groqResp.status}`;
-                        continue;
-                    }
+                // Total: dígitos antes de "avaliações" / "opiniões" / "reviews"
+                const countMatch = text.match(/([\d][,.\d]*)\s*(?:avalia[çc][õo]es|opini[õo]es|reviews)/i)
+                                || text.match(/(?:avalia[çc][õo]es|opini[õo]es)\s*[:\(]?\s*([\d][,.\d]*)/i);
+                const ocrTotal = countMatch ? (parseInt(countMatch[1].replace(/[^0-9]/g, ''), 10) || null) : null;
 
-                    const gJson = await groqResp.json();
-                    const parsed = parseAIResponse(gJson?.choices?.[0]?.message?.content);
-                    if (parsed && (parsed.total !== null || parsed.rating !== null)) {
-                        result = parsed; source = `Groq · ${gModel}`; break;
-                    } else {
-                        lastError = `Groq (${gModel}) retornou dados inválidos.`;
+                if ((ocrTotal !== null && ocrTotal > 0) || (ocrRating !== null && ocrRating >= 1 && ocrRating <= 5)) {
+                    result = { total: ocrTotal, rating: ocrRating };
+                    source = 'Tesseract OCR (local)';
+                } else {
+                    lastError = 'OCR local: dados não encontrados no texto da imagem.';
+                }
+            } catch (e) {
+                lastError = 'OCR local: ' + e.message;
+            }
+
+            // ── ETAPA 1: Groq (fallback se OCR local falhou) ─────────────────────────
+            if (!result) {
+                const GROQ_MODELS = [
+                    'meta-llama/llama-4-scout-17b-16e-instruct',
+                    'meta-llama/llama-4-maverick-17b-128e-instruct',
+                    'llava-v1.5-7b-4096-preview',
+                ];
+
+                for (const gModel of GROQ_MODELS) {
+                    showAiStatus(`<span class="loader" style="width:13px;height:13px;border-width:2px;margin-right:4px;border-top-color:#f55036"></span>1/2 Groq: <strong>${gModel}</strong>...`, 'loading');
+                    try {
+                        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+                            body: JSON.stringify({
+                                model: gModel,
+                                temperature: 0.1,
+                                max_tokens: 200,
+                                messages: [{
+                                    role: 'user',
+                                    content: [
+                                        { type: 'text', text: AI_PROMPT },
+                                        { type: 'image_url', image_url: { url: currentBase64Image } }
+                                    ]
+                                }]
+                            })
+                        });
+
+                        if (groqResp.status === 401) { lastError = 'Chave Groq inválida (401).'; break; }
+                        if (groqResp.status === 429) { lastError = 'Rate limit Groq (429).'; break; }
+                        if (groqResp.status === 400 || groqResp.status === 404) {
+                            const eb = await groqResp.json().catch(() => ({}));
+                            lastError = eb?.error?.message || `Groq: modelo ${gModel} indisponível.`;
+                            continue;
+                        }
+                        if (!groqResp.ok) {
+                            const eb = await groqResp.json().catch(() => ({}));
+                            lastError = eb?.error?.message || `Groq erro ${groqResp.status}`;
+                            continue;
+                        }
+
+                        const gJson = await groqResp.json();
+                        const parsed = parseAIResponse(gJson?.choices?.[0]?.message?.content);
+                        if (parsed && (parsed.total !== null || parsed.rating !== null)) {
+                            result = parsed; source = `Groq · ${gModel}`; break;
+                        } else {
+                            lastError = `Groq (${gModel}) retornou dados inválidos.`;
+                        }
+                    } catch (e) {
+                        lastError = 'Conexão Groq: ' + e.message;
                     }
-                } catch (e) {
-                    lastError = 'Conexão Groq: ' + e.message;
                 }
             }
 
