@@ -1135,9 +1135,11 @@
                 const ratingMatch = text.match(/\b([1-5][,.](\d))\b/);
                 const ocrRating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
 
-                // Total: dígitos antes de "avaliações" / "opiniões" / "reviews"
-                const countMatch = text.match(/([\d][,.\d]*)\s*(?:avalia[çc][õo]es|opini[õo]es|reviews)/i)
-                                || text.match(/(?:avalia[çc][õo]es|opini[õo]es)\s*[:\(]?\s*([\d][,.\d]*)/i);
+                // Total: (786) junto à nota | qualquer (N) com 2+ dígitos | antes/depois de "avaliações"
+                const countMatch = text.match(/[1-5][,.][\d][^\d(]*\((\d[\d.,]*)\)/)
+                                || text.match(/\((\d{2,}[\d.,]*)\)/)
+                                || text.match(/([\d][\d.,]*)\s*(?:avalia[çc][õo]es|opini[õo]es|reviews)/i)
+                                || text.match(/(?:avalia[çc][õo]es|opini[õo]es)\s*[:(]?\s*([\d][\d.,]*)/i);
                 const ocrTotal = countMatch ? (parseInt(countMatch[1].replace(/[^0-9]/g, ''), 10) || null) : null;
 
                 if ((ocrTotal !== null && ocrTotal > 0) || (ocrRating !== null && ocrRating >= 1 && ocrRating <= 5)) {
