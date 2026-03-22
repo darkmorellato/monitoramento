@@ -118,15 +118,57 @@ function extractGoogleRatingData(ocrData) {
     const { text, lines, words } = ocrData;
     let rating = null, total = null;
     const allText = text.replace(/\s+/g, ' ').trim();
+
     const patterns = [
-        { regex: /([0-5][,.]\d)\s*([★☆*✯✰⭐]{1,5})/g, ratingIdx: 1, totalIdx: -1 },
-        { regex: /([0-5][,.]\d)\s*\((\d+)\)/g, ratingIdx: 1, totalIdx: 2 },
-        { regex: /([0-5][,.]\d)\s+([★☆*✯✰⭐]{1,5})\s*\((\d+)\)/g, ratingIdx: 1, totalIdx: 3 },
-        { regex: /([0-5][,.]\d)\s+[★☆*✯✰⭐]{1,5}\s+(\d{2,6})\s*avalia[çc]/i, ratingIdx: 1, totalIdx: 2 },
-        { regex: /([0-5][,.]\d)\s+[★☆*✯✰⭐]{1,5}\s+(\d{2,6})\s*review/i, ratingIdx: 1, totalIdx: 2 },
-        { regex: /(\d{2,6})\s*avalia[çc][ãa]o/i, ratingIdx: -1, totalIdx: 1 },
+        // ── NOTA + ESTRELAS + TOTAL ──
+        // 5,0 ★★ 793 avaliações mp Google
+        { regex: /([0-5][,.]\d)\s*[★☆*✯✰⭐]{1,5}\s+(\d{2,6})\s*avalia[çc]/i, ratingIdx: 1, totalIdx: 2 },
+        // 4.8 ★★ 793 reviews
+        { regex: /([0-5][,.]\d)\s*[★☆*✯✰⭐]{1,5}\s+(\d{2,6})\s*review/i, ratingIdx: 1, totalIdx: 2 },
+        // 4.8 ★★ 793 no Google
+        { regex: /([0-5][,.]\d)\s*[★☆*✯✰⭐]{1,5}\s+(\d{2,6})\s*(?:no|mp|ao|em)\s*google/i, ratingIdx: 1, totalIdx: 2 },
+
+        // ── NOTA + TOTAL (sem estrelas) ──
+        // 4.8 (393)
+        { regex: /([0-5][,.]\d)\s*\((\d{2,6})\)/g, ratingIdx: 1, totalIdx: 2 },
+        // 4.8 393 avaliações
+        { regex: /([0-5][,.]\d)\s+(\d{2,6})\s*avalia[çc]/i, ratingIdx: 1, totalIdx: 2 },
+        // 4.8 393 reviews
+        { regex: /([0-5][,.]\d)\s+(\d{2,6})\s*review/i, ratingIdx: 1, totalIdx: 2 },
+        // 4.8 · 393 avaliações
+        { regex: /([0-5][,.]\d)\s*[·•]\s*(\d{2,6})\s*avalia[çc]/i, ratingIdx: 1, totalIdx: 2 },
+
+        // ── NOTA + ESTRELAS (sem total) ──
+        // 4,9 ★★★★★
+        { regex: /([0-5][,.]\d)\s*[★☆*✯✰⭐]{1,5}/g, ratingIdx: 1, totalIdx: -1 },
+        // ★★★★★ 4.9
+        { regex: /[★☆*✯✰⭐]{1,5}\s*([0-5][,.]\d)/g, ratingIdx: 1, totalIdx: -1 },
+
+        // ── SÓ TOTAL ──
+        // 393 avaliações
+        { regex: /(\d{2,6})\s*avalia[çc][õo]e?s?/i, ratingIdx: -1, totalIdx: 1 },
+        // 393 reviews
         { regex: /(\d{2,6})\s*reviews?/i, ratingIdx: -1, totalIdx: 1 },
+        // 393 no Google / mp Google / ao Google
+        { regex: /(\d{2,6})\s*(?:no|mp|ao|em|de)\s*google/i, ratingIdx: -1, totalIdx: 1 },
+        // Google: 393
+        { regex: /google[:\s]+(\d{2,6})/i, ratingIdx: -1, totalIdx: 1 },
+
+        // ── FORMATO INVERTIDO ──
+        // 793 avaliações Google ★★ 5,0
+        { regex: /(\d{2,6})\s*avalia[çc][^\d]*([0-5][,.]\d)/i, ratingIdx: 2, totalIdx: 1 },
+        // 793 reviews Google 4.8
+        { regex: /(\d{2,6})\s*review[^\d]*([0-5][,.]\d)/i, ratingIdx: 2, totalIdx: 1 },
+
+        // ── FORMATO GOOGLE MAPS ──
+        // Google Maps 4.8 (793)
+        { regex: /google\s*maps?\s*([0-5][,.]\d)\s*\((\d{2,6})\)/i, ratingIdx: 1, totalIdx: 2 },
+        // 4.8 estrelas · 793 avaliações
+        { regex: /([0-5][,.]\d)\s*estrela[^\d]*(\d{2,6})\s*avalia[çc]/i, ratingIdx: 1, totalIdx: 2 },
+        // 4.8 stars · 793 reviews
+        { regex: /([0-5][,.]\d)\s*star[^\d]*(\d{2,6})\s*review/i, ratingIdx: 1, totalIdx: 2 },
     ];
+
     for (const p of patterns) {
         const match = p.regex.exec(allText);
         if (match) {
@@ -136,9 +178,17 @@ function extractGoogleRatingData(ocrData) {
             if (rating !== null) break;
         }
     }
+
+    // ── FALLBACKS ──
+    // Número entre parênteses
     if (!total) { const m = allText.match(/\(\s*(\d{2,6})\s*\)/); if (m) total = parseInt(m[1], 10); }
-    if (!total) { const m = allText.match(/(\d{2,6})\s*(?:avalia[çc]|review|no\s+google)/i); if (m) total = parseInt(m[1], 10); }
+    // Número antes de avaliações/reviews/google
+    if (!total) { const m = allText.match(/(\d{2,6})\s*(?:avalia[çc]|review|no\s+google|mp\s+google)/i); if (m) total = parseInt(m[1], 10); }
+    // Nota solta (formato 4,8 ou 4.8)
     if (!rating) { const ms = allText.match(/\b([0-5][,.]\d)\b/g); if (ms) for (const m of ms) { const r = parseFloat(m.replace(',', '.')); if (r >= 0 && r <= 5) { rating = r; break; } } }
+    // Número grande solto (provavelmente total de avaliações)
+    if (!total) { const ms = allText.match(/\b(\d{3,6})\b/g); if (ms) for (const m of ms) { const t = parseInt(m, 10); if (t >= 10 && t <= 999999) { total = t; break; } } }
+
     return { rating, total };
 }
 
