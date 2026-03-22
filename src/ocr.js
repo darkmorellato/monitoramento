@@ -122,6 +122,10 @@ function extractGoogleRatingData(ocrData) {
         { regex: /([0-5][,.]\d)\s*([★☆*✯✰⭐]{1,5})/g, ratingIdx: 1, totalIdx: -1 },
         { regex: /([0-5][,.]\d)\s*\((\d+)\)/g, ratingIdx: 1, totalIdx: 2 },
         { regex: /([0-5][,.]\d)\s+([★☆*✯✰⭐]{1,5})\s*\((\d+)\)/g, ratingIdx: 1, totalIdx: 3 },
+        { regex: /([0-5][,.]\d)\s+[★☆*✯✰⭐]{1,5}\s+(\d{2,6})\s*avalia[çc]/i, ratingIdx: 1, totalIdx: 2 },
+        { regex: /([0-5][,.]\d)\s+[★☆*✯✰⭐]{1,5}\s+(\d{2,6})\s*review/i, ratingIdx: 1, totalIdx: 2 },
+        { regex: /(\d{2,6})\s*avalia[çc][ãa]o/i, ratingIdx: -1, totalIdx: 1 },
+        { regex: /(\d{2,6})\s*reviews?/i, ratingIdx: -1, totalIdx: 1 },
     ];
     for (const p of patterns) {
         const match = p.regex.exec(allText);
@@ -133,6 +137,7 @@ function extractGoogleRatingData(ocrData) {
         }
     }
     if (!total) { const m = allText.match(/\(\s*(\d{2,6})\s*\)/); if (m) total = parseInt(m[1], 10); }
+    if (!total) { const m = allText.match(/(\d{2,6})\s*(?:avalia[çc]|review|no\s+google)/i); if (m) total = parseInt(m[1], 10); }
     if (!rating) { const ms = allText.match(/\b([0-5][,.]\d)\b/g); if (ms) for (const m of ms) { const r = parseFloat(m.replace(',', '.')); if (r >= 0 && r <= 5) { rating = r; break; } } }
     return { rating, total };
 }
