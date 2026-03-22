@@ -1,180 +1,31 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="light">
+<html lang="pt-BR" class="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor de Avaliações - Google</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <!-- Firebase Cloud Firestore (compat CDN) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        *,
-        body {
-            font-family: 'Inter', sans-serif;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: #f0f4f8;
-            transition: background 0.3s;
-        }
-
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-
-        .loader {
-            border: 2.5px solid #e0e7ff;
-            border-top-color: #6366f1;
-            border-radius: 50%;
-            width: 16px; height: 16px;
-            animation: spin 0.8s linear infinite;
-            display: inline-block; vertical-align: middle;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .fade-up { animation: fadeUp 0.3s ease both; }
-
-        @keyframes pulse-ring {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3) }
-            50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0) }
-        }
-        .pulse-red { animation: pulse-ring 2s infinite; }
-
-        .upload-zone { transition: all 0.2s; }
-        .upload-zone:hover { border-color: #818cf8; background: #f5f3ff; }
-        .upload-zone.drag-over { border-color: #6366f1; background: #ede9fe; transform: scale(1.01); }
-
-        .kpi-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
-
-        .insight-item {
-            border-left: 3px solid;
-            padding: 9px 12px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 6px;
-            font-size: 12px; line-height: 1.6;
-        }
-        .insight-drop { border-color: #ef4444; background: #fff5f5; color: #7f1d1d; }
-        .insight-gain { border-color: #22c55e; background: #f0fdf4; color: #14532d; }
-        .insight-neutral { border-color: #94a3b8; background: #f8fafc; color: #475569; }
-        .insight-warn { border-color: #f59e0b; background: #fffbeb; color: #78350f; }
-
-        .tab-btn { transition: all 0.15s; border-radius: 6px; }
-        .tab-btn.active { background: #3b82f6; color: #fff; }
-        .filter-btn { transition: all 0.15s; border-radius: 6px; }
-        .filter-btn.active { background: #3b82f6; color: #fff; }
-
-        .health-excelente { background: linear-gradient(135deg, #22c55e, #16a34a); }
-        .health-bom { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-        .health-regular { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .health-critico { background: linear-gradient(135deg, #ef4444, #dc2626); }
-
-        .progress-bar { transition: width 0.9s cubic-bezier(.4,0,.2,1); }
-
-        .row-drop { background: #fff5f5 !important; }
-        .row-gain { background: #f0fdf4 !important; }
-
-        @keyframes streak-glow {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.5) }
-            50% { box-shadow: 0 0 0 8px rgba(251,191,36,0) }
-        }
-        .streak-glow { animation: streak-glow 2s infinite; }
-
-        .card { background: #fff; border-radius: 16px; border: 1px solid #e8edf2; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
-
-        #pwModal { backdrop-filter: blur(6px); }
-        #pwInput:focus { box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
-
-        /* Dark mode */
-        html.dark body { background: #0f172a; color: #e2e8f0; }
-        html.dark .card { background: #1e293b !important; border-color: #334155 !important; }
-        html.dark input, html.dark select, html.dark textarea { background: #0f172a !important; color: #e2e8f0 !important; border-color: #334155 !important; }
-        html.dark .bg-gray-50, html.dark .bg-gray-100 { background: #1e293b !important; }
-        html.dark .text-gray-900 { color: #f1f5f9 !important; }
-        html.dark .text-gray-800 { color: #e2e8f0 !important; }
-        html.dark .text-gray-700 { color: #cbd5e1 !important; }
-        html.dark .text-gray-600 { color: #94a3b8 !important; }
-        html.dark .text-gray-500 { color: #64748b !important; }
-        html.dark .text-gray-400 { color: #475569 !important; }
-        html.dark .border-gray-100 { border-color: #334155 !important; }
-        html.dark .border-gray-200 { border-color: #334155 !important; }
-        html.dark .divide-gray-100>*+* { border-color: #1e293b !important; }
-        html.dark .row-drop { background: #2d1515 !important; }
-        html.dark .row-gain { background: #0d2d1a !important; }
-        html.dark .insight-drop { background: #2d1515; color: #fca5a5; }
-        html.dark .insight-gain { background: #0d2d1a; color: #86efac; }
-        html.dark .insight-neutral { background: #1e293b; color: #94a3b8; }
-        html.dark .insight-warn { background: #2d2000; color: #fcd34d; }
-        html.dark .hover\:bg-gray-50:hover { background: #1e293b !important; }
-        html.dark table thead tr { background: #1e293b !important; }
-        html.dark .tab-btn:not(.active), html.dark .filter-btn:not(.active) { color: #94a3b8 !important; }
-        html.dark .upload-zone { border-color: #334155; background: #0f172a; }
-        html.dark .upload-zone:hover { border-color: #818cf8; background: #1e1b4b; }
-
-        /* Mobile */
-        .mobile-bottom-bar {
-            position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
-            background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px); border-top: 1px solid #e2e8f0;
-            padding: 8px 12px; padding-bottom: max(8px, env(safe-area-inset-bottom));
-            display: none; justify-content: space-around; align-items: center;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
-        }
-        html.dark .mobile-bottom-bar { background: rgba(15,23,42,0.92); border-color: #334155; box-shadow: 0 -4px 20px rgba(0,0,0,0.3); }
-        .mobile-bottom-bar button {
-            display: flex; flex-direction: column; align-items: center; gap: 2px;
-            padding: 6px 12px; border-radius: 12px; font-size: 10px; font-weight: 600;
-            color: #64748b; transition: all 0.15s; min-width: 56px;
-        }
-        .mobile-bottom-bar button:active { transform: scale(0.92); background: rgba(59,130,246,0.1); }
-        html.dark .mobile-bottom-bar button { color: #94a3b8; }
-
-        .mobile-cards { display: none; }
-        .mobile-card {
-            border-radius: 16px; border: 1px solid #e8edf2; padding: 14px 16px;
-            margin-bottom: 10px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-            transition: transform 0.2s;
-        }
-        .mobile-card:active { transform: scale(0.98); }
-        .mobile-card.card-drop { background: #fff5f5; border-color: #fecaca; }
-        .mobile-card.card-gain { background: #f0fdf4; border-color: #bbf7d0; }
-        html.dark .mobile-card { background: #1e293b; border-color: #334155; }
-        html.dark .mobile-card.card-drop { background: #2d1515; border-color: #5c2020; }
-        html.dark .mobile-card.card-gain { background: #0d2d1a; border-color: #1a5c32; }
-
-        @media (max-width: 768px) {
-            .mobile-bottom-bar { display: flex; }
-            body { padding-bottom: 72px; }
-            #toast { right: 50% !important; transform: translateX(50%) translateY(80px) !important; bottom: 80px !important; }
-            #toast:not(.translate-y-20) { transform: translateX(50%) translateY(0) !important; }
-        }
-        @media (max-width: 640px) {
-            .mobile-cards { display: block; }
-            .desktop-table { display: none; }
-            .kpi-card { padding: 12px !important; }
-            .kpi-card .text-2xl { font-size: 1.25rem !important; }
-            header .text-sm { font-size: 0.8rem !important; }
-            .donut-wrapper { width: 170px !important; height: 170px !important; }
-            .donut-wrapper .font-black { font-size: 2.25rem !important; }
-            .chart-controls { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-            .chart-controls::-webkit-scrollbar { display: none; }
-        }
-    </style>
+    <!-- Firebase e Chart.js carregados antes do módulo -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icone/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icone/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icone/favicon-16x16.png">
+    <link rel="shortcut icon" href="assets/icone/favicon.ico">
 </head>
 
 <body class="text-gray-800 antialiased min-h-screen">
+
+    <!-- Background Decorativo -->
+    <div class="bg-decorative">
+        <div class="orb-1"></div>
+        <div class="orb-2"></div>
+        <div class="orb-3"></div>
+    </div>
 
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="fixed inset-0 z-[100] flex items-center justify-center p-4"
@@ -189,59 +40,34 @@
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
                 </div>
                 <h1 class="text-2xl font-black text-white mb-1">Monitor de Avaliações</h1>
-                <p class="text-blue-300 text-sm">Google Meu Negócio · Miplace</p>
+                <p class="text-blue-200 text-sm">Google Meu Negócio · Miplace</p>
             </div>
             <div id="storeStep" class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-2xl">
-                <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-4 text-center">Selecione sua loja</p>
+                <p class="text-white text-xs font-semibold uppercase tracking-widest mb-4 text-center">Selecione sua loja</p>
                 <div class="grid grid-cols-1 gap-2.5" id="storeList"></div>
             </div>
-            <div id="passwordStep" class="hidden bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-2xl">
-                <button onclick="backToStores()" class="flex items-center gap-1.5 text-blue-300 hover:text-white text-xs font-semibold mb-5 transition-colors">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                    Voltar
-                </button>
-                <div class="text-center mb-6">
-                    <div id="loginStoreIcon" class="text-4xl mb-2"></div>
-                    <h2 id="loginStoreName" class="text-xl font-black text-white"></h2>
-                    <p class="text-white/50 text-xs mt-1">Digite a senha para acessar</p>
-                </div>
-                <div class="relative mb-3">
-                    <input type="password" id="loginPwInput" placeholder="••••••••••" maxlength="32"
-                        class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 outline-none text-sm font-semibold tracking-wider focus:border-blue-400 focus:bg-white/15 transition-all"
-                        onkeydown="if(event.key==='Enter') doLogin()">
-                    <button type="button" onclick="toggleLoginPw()" class="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors">
-                        <svg id="loginEye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </button>
-                </div>
-                <p id="loginError" class="text-red-400 text-xs text-center mb-3 hidden">❌ Senha incorreta. Tente novamente.</p>
-                <button onclick="doLogin()" class="w-full py-3 rounded-xl font-black text-white text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]" style="background:linear-gradient(135deg,#2563eb,#4f46e5);">
-                    Entrar
-                </button>
-            </div>
-            <p class="text-center text-white/20 text-xs mt-6">© Miplace · Sistema de Monitoramento</p>
+            <p class="text-center text-white/40 text-xs mt-6">© Miplace · Sistema de Monitoramento</p>
         </div>
     </div>
 
     <!-- HEADER -->
-    <header class="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
+    <header class="bg-white/10 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 shadow-lg">
         <div class="max-w-screen-2xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 shrink-0">
-                <div class="bg-gradient-to-br from-blue-600 to-blue-700 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-sm">
+                <div class="bg-gradient-to-br from-blue-600 to-blue-700 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-lg">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
                 </div>
                 <div>
-                    <h1 class="text-sm font-bold text-gray-900 leading-tight">Monitor de Avaliações</h1>
-                    <p class="text-xs text-gray-400 leading-none hidden sm:block">Google Meu Negócio</p>
+                    <h1 class="text-sm font-bold text-white leading-tight">Monitor de Avaliações</h1>
+                    <p class="text-xs text-blue-300 leading-none hidden sm:block">Google Meu Negócio</p>
                 </div>
             </div>
             <div id="headerStats" class="hidden md:flex items-center gap-4 text-xs">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
-                    <span class="text-gray-400">Total:</span>
-                    <span id="hTotal" class="font-bold text-gray-900"></span>
+                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                    <span class="text-white/60">Total:</span>
+                    <span id="hTotal" class="font-bold text-white"></span>
                 </div>
-                <div id="hTrendWrap" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border">
+                <div id="hTrendWrap" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                     <span id="hTrend"></span>
                 </div>
                 <div id="healthBadge" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm">
@@ -249,35 +75,30 @@
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
-                <div id="streakBadge" class="hidden items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">
+                <div id="streakBadge" class="hidden items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs font-bold">
                     🔥 <span id="streakCount">0</span>d
                 </div>
-                <button onclick="toggleDark()" title="Modo escuro" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors">
-                    <svg id="darkIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                    </svg>
-                </button>
-                <button onclick="shareResume()" title="Compartilhar" class="hidden md:flex w-8 h-8 items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors">
+                <button onclick="window.__shareResume()" title="Compartilhar" class="hidden md:flex w-8 h-8 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white/70 transition-colors">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                     </svg>
                 </button>
-                <button onclick="exportPDF()" title="Exportar PDF" class="hidden md:flex items-center gap-1 px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg border border-red-100 transition-colors">
+                <button onclick="window.__exportPDF()" title="Exportar PDF" class="hidden md:flex items-center gap-1 px-2.5 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white/80 text-xs font-semibold rounded-lg transition-colors">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                     </svg>PDF
                 </button>
-                <button onclick="exportCSV()" title="Exportar CSV" class="hidden md:flex items-center gap-1 px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 text-xs font-semibold rounded-lg border border-green-100 transition-colors">
+                <button onclick="window.__exportCSV()" title="Exportar CSV" class="hidden md:flex items-center gap-1 px-2.5 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white/80 text-xs font-semibold rounded-lg transition-colors">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>CSV
                 </button>
-                <div id="storeBadge" class="hidden items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 text-xs font-bold">
+                <div id="storeBadge" class="hidden items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border bg-white/10 backdrop-blur-sm border-white/20 text-white text-xs font-bold">
                     <span id="storeBadgeIcon"></span>
                     <span id="storeBadgeName" class="hidden sm:inline"></span>
                 </div>
-                <button onclick="doLogout()" title="Sair" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition-colors">
+                <button onclick="window.__doLogout()" title="Sair" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-red-500/20 text-white/70 hover:text-red-400 transition-colors">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                     </svg>
@@ -287,23 +108,23 @@
     </header>
 
     <!-- KPI STRIP -->
-    <div class="max-w-screen-2xl mx-auto px-4 md:px-6 pt-5">
+    <div class="max-w-screen-2xl mx-auto px-4 md:px-6 pt-5 relative z-10">
         <div id="kpiRow" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
     </div>
 
     <!-- WEEKLY BAR -->
     <div id="weeklyBar" class="hidden max-w-screen-2xl mx-auto px-4 md:px-6 pt-3">
         <div class="card px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-            <div class="flex items-center gap-2 text-xs font-semibold text-gray-600">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div class="flex items-center gap-2 text-xs font-semibold" style="color:#94a3b8;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>Comparativo Semanal
             </div>
             <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs">
-                <span class="text-gray-400">Semana atual: <strong id="wkCurrent" class="text-blue-700"></strong></span>
-                <span class="text-gray-400">Semana anterior: <strong id="wkPrev" class="text-gray-600"></strong></span>
-                <span class="text-gray-400">Variação: <strong id="wkDiff"></strong></span>
-                <span class="text-gray-400">Quedas: <strong id="wkDrops" class="text-red-600"></strong></span>
+                <span style="color:#64748b;">Semana atual: <strong id="wkCurrent" style="color:#93c5fd;"></strong></span>
+                <span style="color:#64748b;">Semana anterior: <strong id="wkPrev" style="color:#94a3b8;"></strong></span>
+                <span style="color:#64748b;">Variação: <strong id="wkDiff"></strong></span>
+                <span style="color:#64748b;">Quedas: <strong id="wkDrops" style="color:#f87171;"></strong></span>
             </div>
         </div>
     </div>
@@ -316,9 +137,9 @@
 
             <!-- FORM CARD -->
             <div class="card p-5">
-                <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4">
-                    <span class="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <h2 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#e2e8f0;">
+                    <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(59,130,246,0.2);">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                         </svg>
                     </span>
@@ -327,9 +148,9 @@
                 <form id="recordForm" class="space-y-3">
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1 flex items-center justify-between">
+                            <label class="block text-xs font-semibold mb-1 flex items-center justify-between" style="color:#94a3b8;">
                                 <span>Data</span>
-                                <button type="button" id="unlockDateBtn" onclick="requestDateUnlock()" title="Desbloquear data"
+                                <button type="button" id="unlockDateBtn" onclick="window.__requestDateUnlock()" title="Desbloquear data"
                                     class="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-semibold transition-colors">
                                     <svg id="lockIcon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -338,19 +159,19 @@
                                 </button>
                             </label>
                             <input type="text" id="dateDisplay" readonly
-                                class="w-full px-3 py-2 text-sm border border-amber-200 bg-amber-50 rounded-xl outline-none cursor-not-allowed text-gray-700 font-semibold tracking-wide transition-all"
-                                placeholder="DD/MM/AAAA" style="pointer-events:none;">
+                                class="w-full px-3 py-2 text-sm border rounded-xl outline-none cursor-not-allowed font-semibold tracking-wide transition-all"
+                                placeholder="DD/MM/AAAA" style="pointer-events:none; border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.1);color:#fde68a;">
                             <input type="date" id="dateInput" required class="sr-only">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1">
+                            <label class="block text-xs font-semibold mb-1 flex items-center gap-1" style="color:#94a3b8;">
                                 Horário
-                                <span class="inline-flex items-center gap-1 text-xs text-green-600 font-semibold">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block"></span>Ao vivo
+                                <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color:#4ade80;">
+                                    <span class="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style="background:#4ade80;"></span>Ao vivo
                                 </span>
                             </label>
                             <input type="text" id="timeDisplay" readonly
-                                class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none bg-gray-50 text-gray-700 font-semibold tracking-widest cursor-default transition-all"
+                                class="w-full px-3 py-2 text-sm rounded-xl outline-none font-semibold tracking-widest cursor-default transition-all"
                                 placeholder="HH:MM:SS">
                             <input type="time" id="timeInput" class="sr-only">
                         </div>
@@ -358,32 +179,33 @@
 
                     <!-- Upload Zone -->
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">
-                            Foto da Tela <span class="font-normal text-gray-400">(print do Google Meu Negócio)</span>
+                        <label class="block text-xs font-semibold mb-1" style="color:#94a3b8;">
+                            Foto da Tela <span class="font-normal" style="color:#64748b;">(print do Google Meu Negócio)</span>
                         </label>
                         <div id="uploadZone"
-                            class="upload-zone border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 cursor-pointer relative overflow-hidden"
+                            class="upload-zone border-2 border-dashed rounded-xl cursor-pointer relative overflow-hidden"
+                            style="border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.05);"
                             onclick="document.getElementById('imageInput').click()"
                             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
                             <div id="uploadPlaceholder" class="flex flex-col items-center justify-center py-7 px-4 text-center">
-                                <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-3">
-                                    <svg class="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 48 48" stroke="currentColor">
+                                <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style="background:rgba(99,102,241,0.15);">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 48 48" stroke="#818cf8" style="color:#818cf8;">
                                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                 </div>
-                                <p class="text-xs font-semibold text-gray-600">Clique ou arraste a imagem</p>
-                                <p class="text-xs text-gray-400 mt-0.5">PNG, JPG, WEBP</p>
-                                <span class="mt-2.5 inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors">Selecionar arquivo</span>
+                                <p class="text-xs font-semibold" style="color:#a5b4fc;">Clique ou arraste a imagem</p>
+                                <p class="text-xs mt-0.5" style="color:#64748b;">PNG, JPG, WEBP</p>
+                                <span class="mt-2.5 inline-block text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors btn-gradient">Selecionar arquivo</span>
                             </div>
                             <div id="imagePreviewContainer" class="hidden">
                                 <img id="imagePreview" class="w-full max-h-60 object-contain rounded-xl"/>
                                 <div class="absolute top-2 right-2 flex gap-1.5">
-                                    <button type="button" onclick="event.stopPropagation(); showImage(currentBase64Image)" title="Ampliar"
+                                    <button type="button" onclick="event.stopPropagation(); window.__showImage(currentBase64Image)" title="Ampliar"
                                         class="w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-lg flex items-center justify-center transition-colors">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                                     </button>
-                                    <button type="button" onclick="event.stopPropagation(); clearImage()" title="Remover"
-                                        class="w-7 h-7 bg-red-500/80 hover:bg-red-600 text-white rounded-lg flex items-center justify-center transition-colors">
+                                    <button type="button" onclick="event.stopPropagation(); window.__clearImage()" title="Remover"
+                                        class="w-7 h-7 text-white rounded-lg flex items-center justify-center transition-colors" style="background:rgba(239,68,68,0.8);">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                                     </button>
                                 </div>
@@ -393,78 +215,43 @@
                             </div>
                             <input id="imageInput" type="file" accept="image/*" class="sr-only">
                         </div>
-                    </div>
-
-                    <!-- AI Extract Button -->
-                    <div id="aiSection" class="hidden">
-                        <button type="button" id="aiBtn"
-                            class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-bold py-2.5 rounded-xl shadow flex justify-center items-center gap-2 transition-all disabled:opacity-60">
-                            <span id="aiBtnText">✨ Extrair Dados com IA</span>
+                        <button type="button" id="extractBtn" onclick="window.__extractDataFromImage()"
+                            class="btn-blue-light ripple mt-2 w-full text-white text-sm font-bold py-3 rounded-xl flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                            Extrair Dados
                         </button>
-                        <div id="aiStatusBar" class="hidden mt-2">
-                            <div id="aiStatusContent" class="flex items-center gap-2 text-xs px-3 py-2 rounded-xl"></div>
-                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Total de Avaliações</label>
+                            <label class="block text-xs font-semibold mb-1" style="color:#94a3b8;">Total de Avaliações</label>
                             <input type="number" id="totalInput" required min="0" placeholder="Ex: 145"
-                                class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 transition-all">
+                                class="input-glow w-full px-4 py-3 text-sm border rounded-xl outline-none transition-all">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nota Média</label>
+                            <label class="block text-xs font-semibold mb-1" style="color:#94a3b8;">Nota Média</label>
                             <input type="number" id="ratingInput" step="0.1" min="1" max="5" placeholder="Ex: 4.8"
-                                class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 transition-all">
+                                class="input-glow w-full px-4 py-3 text-sm border rounded-xl outline-none transition-all">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Observações <span class="font-normal text-gray-400">(opcional)</span></label>
-                        <textarea id="notesInput" rows="2" placeholder="Ex: Abri chamado no suporte, campanha ativa..."
-                            class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 transition-all resize-none"></textarea>
+                        <label class="block text-xs font-semibold mb-1" style="color:#94a3b8;">Observações <span class="font-normal" style="color:#475569;">(opcional)</span></label>
+                        <textarea id="notesInput" rows="2" placeholder="Ex: Abri chamado no suporte, campanha ativa..." class="input-glow w-full px-4 py-3 text-xs border rounded-xl outline-none transition-all resize-none"></textarea>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors shadow-sm">
+                    <button type="submit" class="btn-green-light ripple w-full text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         Salvar Registro
                     </button>
                 </form>
             </div>
 
-            <!-- META CARD -->
-            <div class="card p-5">
-                <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
-                    <span class="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-                        </svg>
-                    </span>Meta de Avaliações
-                </h2>
-                <div class="flex gap-2 mb-3">
-                    <input type="number" id="goalInput" placeholder="Ex: 200" min="1"
-                        class="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-400 transition-all">
-                    <button onclick="setGoal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition-colors">Definir</button>
-                </div>
-                <div id="goalDisplay" class="hidden">
-                    <div class="flex justify-between text-xs text-gray-400 mb-1.5">
-                        <span id="goalCurrent"></span><span id="goalTarget"></span>
-                    </div>
-                    <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                        <div id="goalBar" class="progress-bar h-2.5 rounded-full bg-gradient-to-r from-purple-500 to-blue-500" style="width:0%"></div>
-                    </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <span id="goalPercent" class="text-sm font-bold text-purple-700"></span>
-                        <span id="goalRemaining" class="text-xs text-gray-400"></span>
-                    </div>
-                </div>
-                <p id="goalEmpty" class="text-xs text-gray-400">Defina uma meta para acompanhar o progresso.</p>
-            </div>
-
             <!-- INSIGHTS CARD -->
             <div class="card p-5">
-                <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
-                    <span class="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <h2 class="text-sm font-bold flex items-center gap-2 mb-3" style="color:#e2e8f0;">
+                    <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.2);">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M3 15h6"/><path d="M6 12v6"/>
                         </svg>
                     </span>Análise Inteligente
@@ -485,78 +272,79 @@
                 <div class="card p-5 flex flex-col">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                         <div class="flex items-center gap-3">
-                            <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                <span class="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <h2 class="text-sm font-bold flex items-center gap-2" style="color:#e2e8f0;">
+                                <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(34,197,94,0.2);">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
                                     </svg>
                                 </span>Gráfico de Evolução
                             </h2>
                             <label class="flex items-center gap-1.5 cursor-pointer text-xs text-gray-400 select-none">
-                                <input type="checkbox" id="forecastToggle" class="w-3.5 h-3.5 accent-orange-500" onchange="renderChart(currentChart)">
+                                <input type="checkbox" id="forecastToggle" class="w-3.5 h-3.5 accent-orange-500" onchange="window.__renderChart()">
                                 Previsão
                             </label>
                         </div>
                         <div class="flex items-center gap-2 flex-wrap chart-controls">
-                            <div class="flex gap-0.5 bg-gray-100 p-1 rounded-lg">
-                                <button class="filter-btn active text-xs font-semibold px-2.5 py-1" onclick="setPeriod(0, this)">Tudo</button>
-                                <button class="filter-btn text-xs font-semibold px-2.5 py-1 text-gray-500" onclick="setPeriod(7, this)">7d</button>
-                                <button class="filter-btn text-xs font-semibold px-2.5 py-1 text-gray-500" onclick="setPeriod(15, this)">15d</button>
-                                <button class="filter-btn text-xs font-semibold px-2.5 py-1 text-gray-500" onclick="setPeriod(30, this)">30d</button>
+                            <div class="flex gap-0.5 p-1 rounded-lg" style="background:rgba(51,65,85,0.5);">
+                                <button class="filter-btn active text-xs font-semibold px-2.5 py-1" onclick="window.__setPeriod(0, this)">Tudo</button>
+                                <button class="filter-btn text-xs font-semibold px-2.5 py-1" onclick="window.__setPeriod(7, this)" style="color:#94a3b8;">7d</button>
+                                <button class="filter-btn text-xs font-semibold px-2.5 py-1" onclick="window.__setPeriod(15, this)" style="color:#94a3b8;">15d</button>
+                                <button class="filter-btn text-xs font-semibold px-2.5 py-1" onclick="window.__setPeriod(30, this)" style="color:#94a3b8;">30d</button>
                             </div>
-                            <div class="flex gap-0.5 bg-gray-100 p-1 rounded-lg">
-                                <button class="tab-btn active text-xs font-semibold px-2.5 py-1" onclick="switchChart('volume')">Volume</button>
-                                <button class="tab-btn text-xs font-semibold px-2.5 py-1 text-gray-500" onclick="switchChart('variacao')">Variação</button>
-                                <button class="tab-btn text-xs font-semibold px-2.5 py-1 text-gray-500" onclick="switchChart('nota')">Nota ★</button>
-                                <button class="tab-btn text-xs font-semibold px-2.5 py-1 text-gray-500" onclick="switchChart('pct')">%</button>
+                            <div class="flex gap-0.5 p-1 rounded-lg" style="background:rgba(51,65,85,0.5);">
+                                <button class="tab-btn active text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('volume')">Volume</button>
+                                <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('variacao')">Variação</button>
+                                <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('nota')">Nota ★</button>
+                                <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('pct')">%</button>
+                                <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('comparar')">📊 Comparar</button>%</button>
                             </div>
                         </div>
                     </div>
                     <div class="relative flex-1" style="min-height:200px;">
                         <canvas id="mainChart"></canvas>
-                        <div id="chartEmpty" class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm hidden">Sem dados suficientes.</div>
+                        <div id="chartEmpty" class="absolute inset-0 flex items-center justify-center text-sm hidden" style="color:#64748b;">Sem dados suficientes.</div>
                     </div>
                 </div>
 
                 <!-- Donut Chart -->
                 <div class="card p-5 flex flex-col">
-                    <h2 class="text-sm font-bold text-gray-900 mb-0.5">Distribuição de Dias</h2>
-                    <p class="text-xs text-gray-400 mb-4">Clique nos cards para destacar</p>
+                    <h2 class="text-sm font-bold mb-0.5" style="color:#e2e8f0;">Distribuição de Dias</h2>
+                    <p class="text-xs mb-4" style="color:#64748b;">Clique nos cards para destacar</p>
                     <div class="flex items-center justify-center flex-1">
                         <div class="relative donut-wrapper" style="width:210px;height:210px;flex-shrink:0;">
                             <canvas id="donutChart" width="210" height="210"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
-                                <span id="donutMain" class="font-black text-gray-900 leading-none" style="font-size:3rem;"></span>
-                                <span class="text-xs font-bold text-gray-400 tracking-wide mt-0.5">DIAS</span>
-                                <span id="donutSubLabel" class="text-xs text-gray-400 mt-0.5 font-semibold"></span>
+                                <span id="donutMain" class="font-black leading-none" style="font-size:3rem; color: #ffffff;"></span>
+                                <span class="text-xs font-bold tracking-wide mt-0.5" style="color:#64748b;">DIAS</span>
+                                <span id="donutSubLabel" class="text-xs mt-0.5 font-semibold" style="color:#94a3b8;"></span>
                             </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-3 gap-2 mt-4">
-                        <div id="donutCardGain" class="flex flex-col items-center justify-center bg-green-50 border border-green-100 rounded-2xl py-3 px-1 cursor-pointer hover:bg-green-100 transition-all" onclick="donutFocus('gain')">
-                            <span id="donutGain" class="text-2xl font-black text-green-700 leading-none"></span>
-                            <span class="text-xs font-bold text-green-600 mt-1">📈 Ganhos</span>
-                            <span id="donutGainPct" class="text-xs text-green-400 mt-0.5"></span>
+                        <div id="donutCardGain" class="flex flex-col items-center justify-center rounded-2xl py-3 px-1 cursor-pointer transition-all" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);" onclick="window.__donutFocus('gain')">
+                            <span id="donutGain" class="text-2xl font-black leading-none" style="color:#86efac;"></span>
+                            <span class="text-xs font-bold mt-1" style="color:#4ade80;">📈 Ganhos</span>
+                            <span id="donutGainPct" class="text-xs mt-0.5" style="color:rgba(134,239,172,0.8);"></span>
                         </div>
-                        <div id="donutCardDrop" class="flex flex-col items-center justify-center bg-red-50 border border-red-100 rounded-2xl py-3 px-1 cursor-pointer hover:bg-red-100 transition-all" onclick="donutFocus('drop')">
-                            <span id="donutDrop" class="text-2xl font-black text-red-600 leading-none"></span>
-                            <span class="text-xs font-bold text-red-500 mt-1">🔻 Quedas</span>
-                            <span id="donutDropPct" class="text-xs text-red-300 mt-0.5"></span>
+                        <div id="donutCardDrop" class="flex flex-col items-center justify-center rounded-2xl py-3 px-1 cursor-pointer transition-all" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);" onclick="window.__donutFocus('drop')">
+                            <span id="donutDrop" class="text-2xl font-black leading-none" style="color:#fca5a5;"></span>
+                            <span class="text-xs font-bold mt-1" style="color:#f87171;">🔻 Quedas</span>
+                            <span id="donutDropPct" class="text-xs mt-0.5" style="color:rgba(252,165,165,0.8);"></span>
                         </div>
-                        <div id="donutCardNeutral" class="flex flex-col items-center justify-center bg-gray-50 border border-gray-200 rounded-2xl py-3 px-1 cursor-pointer hover:bg-gray-100 transition-all" onclick="donutFocus('neutral')">
-                            <span id="donutNeutral" class="text-2xl font-black text-gray-500 leading-none"></span>
-                            <span class="text-xs font-bold text-gray-400 mt-1">● Neutros</span>
-                            <span id="donutNeutralPct" class="text-xs text-gray-300 mt-0.5"></span>
+                        <div id="donutCardNeutral" class="flex flex-col items-center justify-center rounded-2xl py-3 px-1 cursor-pointer transition-all" style="background:rgba(148,163,184,0.15);border:1px solid rgba(148,163,184,0.3);" onclick="window.__donutFocus('neutral')">
+                            <span id="donutNeutral" class="text-2xl font-black leading-none" style="color:#cbd5e1;"></span>
+                            <span class="text-xs font-bold mt-1" style="color:#94a3b8;">● Neutros</span>
+                            <span id="donutNeutralPct" class="text-xs mt-0.5" style="color:rgba(203,213,225,0.8);"></span>
                         </div>
                     </div>
                     <div class="w-full mt-3">
-                        <div class="w-full h-2.5 rounded-full overflow-hidden bg-gray-100 flex">
-                            <div id="donutBarGain" class="h-full bg-green-400 transition-all duration-700" style="width:0%"></div>
-                            <div id="donutBarDrop" class="h-full bg-red-400 transition-all duration-700" style="width:0%"></div>
-                            <div id="donutBarNeutral" class="h-full bg-gray-300 transition-all duration-700" style="width:0%"></div>
+                        <div class="w-full h-2.5 rounded-full overflow-hidden flex" style="background: rgba(51, 65, 85, 0.6);">
+                            <div id="donutBarGain" class="h-full transition-all duration-700" style="width:0%; background: #22c55e;"></div>
+                            <div id="donutBarDrop" class="h-full transition-all duration-700" style="width:0%; background: #ef4444;"></div>
+                            <div id="donutBarNeutral" class="h-full transition-all duration-700" style="width:0%; background: #64748b;"></div>
                         </div>
-                        <div class="flex justify-between text-xs text-gray-400 mt-1.5 font-medium">
-                            <span>📈 Ganhos</span><span>🔻 Quedas</span><span>● Neutros</span>
+                        <div class="flex justify-between text-xs mt-1.5 font-medium" style="color: #94a3b8;">
+                            <span style="color: #4ade80;">📈 Ganhos</span><span style="color: #f87171;">🔻 Quedas</span><span style="color: #94a3b8;">● Neutros</span>
                         </div>
                     </div>
                 </div>
@@ -564,51 +352,59 @@
 
             <!-- TABLE CARD -->
             <div class="card flex flex-col overflow-hidden">
-                <div class="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="px-5 py-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3" style="border-color: rgba(255,255,255,0.08);">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <span class="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <h2 class="text-sm font-bold flex items-center gap-2" style="color:#e2e8f0;">
+                            <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(99,102,241,0.2);">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M3 10h18M3 14h18M3 18h18M3 6h18"/>
                                 </svg>
                             </span>Diário de Registros
                         </h2>
                         <div class="flex items-center gap-1.5 flex-wrap">
-                            <span id="dropCount" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-red-50 text-red-600 font-bold border border-red-100">
+                            <span id="dropCount" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);">
                                 🔻 <span id="dropCountNum"></span> queda<span id="dropCountPlural"></span>
                             </span>
-                            <span id="gainCount" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-green-50 text-green-600 font-bold border border-green-100">
+                            <span id="gainCount" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(34,197,94,0.2);color:#86efac;border:1px solid rgba(34,197,94,0.3);">
                                 📈 <span id="gainCountNum"></span> ganho<span id="gainCountPlural"></span>
                             </span>
-                            <span id="totalGainedBadge" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-bold border border-blue-100">
+                            <span id="totalGainedBadge" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(59,130,246,0.2);color:#93c5fd;border:1px solid rgba(59,130,246,0.3);">
                                 ✅ <span id="totalGainedNum"></span> avaliações ganhas
                             </span>
-                            <span id="totalLostBadge" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 font-bold border border-orange-100">
+                            <span id="totalLostBadge" class="hidden items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(249,115,22,0.2);color:#fdba74;border:1px solid rgba(249,115,22,0.3);">
                                 ❌ <span id="totalLostNum"></span> avaliações perdidas
                             </span>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <input type="text" id="searchInput" placeholder="Buscar data ou obs..." oninput="renderTable()"
-                            class="text-xs px-3 py-1.5 rounded-xl border border-gray-200 outline-none w-36 focus:w-48 focus:ring-2 focus:ring-blue-300 transition-all">
-                        <button onclick="exportCSV()" class="text-xs px-3 py-1.5 rounded-xl bg-green-50 text-green-700 border border-green-100 font-semibold hover:bg-green-100 transition-colors">CSV</button>
+                        <div class="flex items-center gap-1 rounded-xl px-1 py-1" style="background:rgba(51,65,85,0.5);">
+                            <button onclick="window.__prevMonth()" title="Mês anterior" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                            </button>
+                            <span id="monthLabel" class="text-xs font-bold text-white min-w-[110px] text-center select-none cursor-default"></span>
+                            <button onclick="window.__nextMonth()" title="Próximo mês" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                            </button>
+                        </div>
+                        <button onclick="window.__goToCurrentMonth()" title="Mês atual" class="text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors" style="background:rgba(59,130,246,0.2);color:#93c5fd;border:1px solid rgba(59,130,246,0.3);">Hoje</button>
+                        <button onclick="window.__exportCSV()" class="text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors" style="background:rgba(34,197,94,0.2);color:#86efac;border:1px solid rgba(34,197,94,0.3);">CSV</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto desktop-table">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-gray-50 border-b border-gray-100">
+                        <thead class="border-b" style="border-color: rgba(255,255,255,0.08); background: rgba(51,65,85,0.5);">
                             <tr>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-600 select-none" onclick="sortBy('date')">Data ↕</th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-600 select-none" onclick="sortBy('total')">Total ↕</th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Nota</th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-600 select-none" onclick="sortBy('diff')">Variação ↕</th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">%</th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Obs.</th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Prova</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none" style="color: #94a3b8;" onclick="window.__sortBy('date')">Data ↕</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none" style="color: #94a3b8;" onclick="window.__sortBy('total')">Total ↕</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #94a3b8;">Nota</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none" style="color: #94a3b8;" onclick="window.__sortBy('diff')">Variação ↕</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #94a3b8;">%</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #94a3b8;">Status</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #94a3b8;">Obs.</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #94a3b8;">Prova</th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody" class="divide-y divide-gray-50 bg-white"></tbody>
+                        <tbody id="tableBody" class="divide-y" style="background: rgba(15,23,42,0.4); border-color: rgba(255,255,255,0.05);"></tbody>
                     </table>
                 </div>
                 <div id="mobileCards" class="mobile-cards px-4 py-3"></div>
@@ -617,9 +413,9 @@
     </main>
 
     <!-- MODALS -->
-    <div id="imageModal" class="fixed inset-0 bg-black/80 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm" onclick="this.classList.add('hidden')">
+    <div id="imageModal" class="fixed inset-0 bg-black/80 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm" onclick="window.__closeModal(this)">
         <img id="modalImg" class="max-w-full max-h-full rounded-2xl shadow-2xl object-contain border border-white/10" src="" alt="Comprovante">
-        <button class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center text-white bg-black/50 rounded-full hover:bg-white/20 transition-colors">
+        <button onclick="event.stopPropagation(); window.__closeModal(document.getElementById('imageModal'))" class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center text-white bg-black/50 rounded-full hover:bg-white/20 transition-colors">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
     </div>
@@ -627,1415 +423,108 @@
     <div id="notesModal" class="fixed inset-0 bg-black/60 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm">
         <div class="card p-6 max-w-md w-full shadow-2xl">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-gray-900">📝 Observações</h3>
-                <button onclick="document.getElementById('notesModal').classList.add('hidden')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                <h3 class="font-bold" style="color:#e2e8f0;">📝 Observações</h3>
+                <button onclick="window.__closeModal(document.getElementById('notesModal'))" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-200 transition-colors" style="background:rgba(255,255,255,0.1);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>
-            <p id="notesModalContent" class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"></p>
+            <p id="notesModalContent" class="text-sm leading-relaxed whitespace-pre-wrap" style="color:#cbd5e1;"></p>
         </div>
     </div>
 
     <div id="shareModal" class="fixed inset-0 bg-black/60 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm">
         <div class="card p-6 max-w-lg w-full shadow-2xl">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-gray-900">📋 Compartilhar Resumo</h3>
-                <button onclick="document.getElementById('shareModal').classList.add('hidden')" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                <h3 class="font-bold" style="color:#e2e8f0;">📋 Compartilhar Resumo</h3>
+                <button onclick="window.__closeModal(document.getElementById('shareModal'))" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-200 transition-colors" style="background:rgba(255,255,255,0.1);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>
-            <textarea id="shareText" class="w-full h-52 text-xs font-mono border border-gray-200 rounded-xl p-3 outline-none resize-none bg-gray-50"></textarea>
-            <button onclick="copyShare()" class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">Copiar Texto</button>
+            <textarea id="shareText" class="w-full h-52 text-xs font-mono border rounded-xl p-3 outline-none resize-none"></textarea>
+            <button onclick="window.__copyShare()" class="mt-3 w-full font-bold py-2.5 rounded-xl transition-colors text-sm btn-gradient">Copiar Texto</button>
         </div>
     </div>
 
     <div id="pwModal" class="fixed inset-0 bg-black/60 hidden z-50 flex justify-center items-center p-4">
         <div class="card p-6 w-full max-w-sm shadow-2xl border border-amber-100">
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(245,158,11,0.2);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
                 </div>
                 <div>
-                    <h3 class="font-bold text-gray-900 text-sm">Desbloquear Data</h3>
-                    <p class="text-xs text-gray-400">Digite a senha para editar a data</p>
+                    <h3 class="font-bold text-sm" style="color:#e2e8f0;">Desbloquear Data</h3>
+                    <p class="text-xs" style="color:#64748b;">Digite a senha para editar a data</p>
                 </div>
             </div>
             <div class="relative mb-3">
                 <input type="password" id="pwInput" placeholder="••••••••••" maxlength="32"
-                    class="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none transition-all pr-10"
-                    onkeydown="if(event.key==='Enter') checkDatePw()">
-                <button type="button" onclick="togglePwVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    class="w-full px-4 py-2.5 text-sm border rounded-xl outline-none transition-all pr-10"
+                    onkeydown="if(event.key==='Enter') window.__checkDatePw()">
+                <button type="button" onclick="window.__togglePwVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2" style="color:#94a3b8;">
                     <svg id="pwEye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                     </svg>
                 </button>
             </div>
-            <p id="pwError" class="text-xs text-red-500 mb-3 hidden">❌ Senha incorreta. Tente novamente.</p>
+            <p id="pwError" class="text-xs mb-3 hidden" style="color:#f87171;">❌ Senha incorreta. Tente novamente.</p>
             <div class="flex gap-2">
-                <button type="button" onclick="closePwModal()" class="flex-1 py-2 text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancelar</button>
-                <button type="button" onclick="checkDatePw()" class="flex-1 py-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors shadow-sm">Desbloquear</button>
+                <button type="button" onclick="window.__closePwModal()" class="flex-1 py-2 text-sm font-semibold rounded-xl transition-colors" style="background:rgba(51,65,85,0.5);color:#94a3b8;">Cancelar</button>
+                <button type="button" onclick="window.__checkDatePw()" class="flex-1 py-2 text-sm font-bold text-white rounded-xl transition-colors shadow-sm btn-gradient">Desbloquear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/60 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="card p-6 max-w-sm w-full shadow-2xl" style="animation: fadeUp 0.3s ease;">
+            <h3 id="confirmTitle" class="font-bold text-lg mb-2" style="color:#e2e8f0;"></h3>
+            <p id="confirmMessage" class="text-sm mb-5" style="color:#94a3b8;"></p>
+            <div class="flex gap-2">
+                <button onclick="window.confirmCancel()" class="flex-1 py-2.5 text-sm font-semibold rounded-xl transition-colors" style="background:rgba(51,65,85,0.5);color:#94a3b8;">Cancelar</button>
+                <button onclick="window.confirmAccept()" class="flex-1 py-2.5 text-sm font-bold text-white rounded-xl transition-colors btn-gradient">Confirmar</button>
             </div>
         </div>
     </div>
 
     <!-- Mobile Bottom Bar -->
     <div class="mobile-bottom-bar md:hidden" id="mobileBottomBar">
-        <button onclick="shareResume()">
+        <button onclick="window.__shareResume()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>Compartilhar
         </button>
-        <button onclick="exportPDF()">
+        <button onclick="window.__exportPDF()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
             </svg>PDF
         </button>
-        <button onclick="exportCSV()">
+        <button onclick="window.__exportCSV()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>CSV
         </button>
-        <button onclick="toggleDark()">
-            <svg id="darkIconMobile" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>Tema
-        </button>
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 transform transition-all duration-300 translate-y-20 opacity-0 z-50 pointer-events-none">
-        <div class="bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl font-medium text-sm flex items-center gap-3">
-            <span id="toastIcon"></span>
-            <span id="toastMessage"></span>
+    <div id="toast" class="fixed bottom-5 right-5 transform transition-all duration-500 ease-out translate-y-20 opacity-0 z-50 pointer-events-none">
+        <div class="glass rounded-2xl px-6 py-4 shadow-2xl font-medium text-sm flex items-center gap-4 max-w-sm">
+            <span id="toastIcon" class="flex-shrink-0"></span>
+            <span id="toastMessage" style="color:#e2e8f0;"></span>
         </div>
     </div>
 
+    <!-- JS Scripts (módulos ES) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="src/app.js"></script>
     <script>
-        // ── FIREBASE INIT ─────────────────────────────────────────────────────────────
-        const firebaseConfig = {
-            apiKey: "AIzaSyBxRJpmbWWgIcA1KkV4TgM6WLhFyVY6Hm4",
-            authDomain: "monitoramento-avaliacoes.firebaseapp.com",
-            projectId: "monitoramento-avaliacoes",
-            storageBucket: "monitoramento-avaliacoes.firebasestorage.app",
-            messagingSenderId: "812869615193",
-            appId: "1:812869615193:web:ea98ca5c912d3cfcc53b48",
-            measurementId: "G-R8S9L9R2RT"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        let fbListener = null;
-
-        // ── API KEYS ─────────────────────────────────────────────────────────────────
-        const GROQ_KEY = '';
-        const OPENROUTER_KEY = '';
-
-        // ── PASSWORD ─────────────────────────────────────────────────────────────────
-        const _a = ['#', 'B', 'a', 'n', 'a', 'n', 'a', '@', '1', '0'];
-        const _getPw = () => _a.join('');
-        let dateUnlocked = false;
-
-        window.requestDateUnlock = function () {
-            if (dateUnlocked) { lockDate(); return; }
-            document.getElementById('pwInput').value = '';
-            document.getElementById('pwError').classList.add('hidden');
-            document.getElementById('pwModal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('pwInput').focus(), 100);
-        };
-
-        window.checkDatePw = function () {
-            const val = document.getElementById('pwInput').value;
-            if (val === _getPw()) {
-                dateUnlocked = true;
-                closePwModal();
-                unlockDate();
-                showToast('🔓 Data desbloqueada!', 'success');
-            } else {
-                document.getElementById('pwError').classList.remove('hidden');
-                document.getElementById('pwInput').value = '';
-                document.getElementById('pwInput').focus();
-                setTimeout(() => document.getElementById('pwError').classList.add('hidden'), 3000);
-            }
-        };
-
-        window.closePwModal = function () { document.getElementById('pwModal').classList.add('hidden'); };
-
-        window.togglePwVisibility = function () {
-            const inp = document.getElementById('pwInput');
-            const eye = document.getElementById('pwEye');
-            if (inp.type === 'password') {
-                inp.type = 'text';
-                eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
-            } else {
-                inp.type = 'password';
-                eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-            }
-        };
-
-        function unlockDate() {
-            const dd = document.getElementById('dateDisplay');
-            dd.readOnly = false;
-            dd.style.pointerEvents = 'auto';
-            dd.classList.remove('border-amber-200', 'bg-amber-50', 'cursor-not-allowed');
-            dd.classList.add('border-green-300', 'bg-green-50', 'cursor-text');
-            dd.oninput = function () {
-                const parts = dd.value.split('/');
-                if (parts.length === 3 && parts[2].length === 4) {
-                    document.getElementById('dateInput').value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-                }
-            };
-            document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
-            document.getElementById('lockLabel').textContent = 'Desbloqueado';
-            document.getElementById('unlockDateBtn').className = 'flex items-center gap-1 text-xs text-green-600 hover:text-green-800 font-semibold transition-colors';
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js').catch(() => {});
         }
-
-        function lockDate() {
-            dateUnlocked = false;
-            const dd = document.getElementById('dateDisplay');
-            dd.readOnly = true;
-            dd.style.pointerEvents = 'none';
-            dd.oninput = null;
-            dd.classList.add('border-amber-200', 'bg-amber-50', 'cursor-not-allowed');
-            dd.classList.remove('border-green-300', 'bg-green-50', 'cursor-text');
-            document.getElementById('lockIcon').innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
-            document.getElementById('lockLabel').textContent = 'Bloqueado';
-            document.getElementById('unlockDateBtn').className = 'flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-semibold transition-colors';
-            showToast('🔒 Data bloqueada novamente.', 'success');
-        }
-
-        // ── REAL-TIME CLOCK ───────────────────────────────────────────────────────────
-        function startClock() {
-            function tick() {
-                const now = new Date();
-                const hh = String(now.getHours()).padStart(2,'0');
-                const mm = String(now.getMinutes()).padStart(2,'0');
-                const ss = String(now.getSeconds()).padStart(2,'0');
-                const dd = String(now.getDate()).padStart(2,'0');
-                const mo = String(now.getMonth()+1).padStart(2,'0');
-                const yyyy = now.getFullYear();
-                const timeDisplay = document.getElementById('timeDisplay');
-                if (timeDisplay) timeDisplay.value = `${hh}:${mm}:${ss}`;
-                const timeInput = document.getElementById('timeInput');
-                if (timeInput) timeInput.value = `${hh}:${mm}`;
-                const dateDisplay = document.getElementById('dateDisplay');
-                if (dateDisplay && !dateUnlocked) dateDisplay.value = `${dd}/${mo}/${yyyy}`;
-                const dateInput = document.getElementById('dateInput');
-                if (dateInput && !dateUnlocked) dateInput.value = `${yyyy}-${mo}-${dd}`;
-            }
-            tick();
-            setInterval(tick, 1000);
-        }
-
-        // ── STATE ─────────────────────────────────────────────────────────────────────
-        let logs = [];
-        let chartInstance = null;
-        let donutInstance = null;
-        let currentChart = 'volume';
-        let currentBase64Image = null;
-        let currentMimeType = null;
-        let periodFilter = 0;
-        let goalValue = parseInt(localStorage.getItem('monitor_goal') || '0');
-        let sortField = 'date';
-        let sortDir = -1;
-        let darkMode = localStorage.getItem('dark_mode') === 'true';
-
-        // ── FIRESTORE HELPERS ──────────────────────────────────────────────────────────
-        function storeRef() {
-            if (!currentStore) return null;
-            return db.collection('Lojas').doc(currentStore.name).collection('registros');
-        }
-
-        function compressImage(base64, maxKB = 700) {
-            return new Promise(resolve => {
-                if (!base64) { resolve(null); return; }
-                const img = new Image();
-                img.onload = () => {
-                    let w = img.width, h = img.height;
-                    const maxDim = 1200;
-                    if (w > maxDim || h > maxDim) {
-                        const ratio = Math.min(maxDim/w, maxDim/h);
-                        w = Math.round(w*ratio); h = Math.round(h*ratio);
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    let quality = 0.8;
-                    let result = canvas.toDataURL('image/jpeg', quality);
-                    while (result.length > maxKB*1024*1.37 && quality > 0.2) {
-                        quality -= 0.1;
-                        result = canvas.toDataURL('image/jpeg', quality);
-                    }
-                    resolve(result.length > maxKB*1024*1.37 ? null : result);
-                };
-                img.onerror = () => resolve(null);
-                img.src = base64;
-            });
-        }
-
-        async function saveLogEntry(entry) {
-            const ref = storeRef();
-            if (!ref) return;
-            const docData = { ...entry };
-            if (entry.image) {
-                const compressed = await compressImage(entry.image);
-                if (compressed) {
-                    docData.image = compressed;
-                } else {
-                    docData.image = null;
-                    showToast('⚠️ Imagem muito grande para salvar na nuvem. Registro salvo sem imagem.', 'error');
-                }
-            } else {
-                docData.image = null;
-            }
-            await ref.doc(String(entry.id)).set(docData);
-        }
-
-        function listenToStore(store) {
-            if (fbListener) { fbListener(); fbListener = null; }
-            const ref = db.collection('Lojas').doc(store.name).collection('registros');
-            showToast('⏳ Carregando dados da loja...', 'success');
-            fbListener = ref.onSnapshot(snap => {
-                logs = snap.docs.map(d => d.data());
-                logs.sort((a,b) => new Date(a.date) - new Date(b.date));
-                updateAll();
-            }, err => {
-                console.error('Firestore listener error:', err);
-                showToast('❌ Erro ao conectar ao Firestore.', 'error');
-            });
-        }
-
-        // ── DOM REFS ──────────────────────────────────────────────────────────────────
-        const form = document.getElementById('recordForm');
-        const dateInput = document.getElementById('dateInput');
-        const totalInput = document.getElementById('totalInput');
-        const ratingInput = document.getElementById('ratingInput');
-        const notesInput = document.getElementById('notesInput');
-        const imageInput = document.getElementById('imageInput');
-        const imagePreview = document.getElementById('imagePreview');
-        const aiBtn = document.getElementById('aiBtn');
-        const aiBtnText = document.getElementById('aiBtnText');
-        const tableBody = document.getElementById('tableBody');
-        let _clockStarted = false;
-
-        // ── INIT ─────────────────────────────────────────────────────────────────────
-        function init() {
-            const now = new Date();
-            const dd = String(now.getDate()).padStart(2,'0');
-            const mo = String(now.getMonth()+1).padStart(2,'0');
-            const yyyy = now.getFullYear();
-            dateInput.value = `${yyyy}-${mo}-${dd}`;
-            document.getElementById('dateDisplay').value = `${dd}/${mo}/${yyyy}`;
-            if (!_clockStarted) { startClock(); _clockStarted = true; }
-            if (goalValue > 0) {
-                document.getElementById('goalInput').value = goalValue;
-                document.getElementById('goalEmpty').classList.add('hidden');
-                document.getElementById('goalDisplay').classList.remove('hidden');
-            }
-            if (darkMode) applyDark(true);
-        }
-
-        // ── DARK MODE ─────────────────────────────────────────────────────────────────
-        function applyDark(on) {
-            const sunIcon = '<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707"/><circle cx="12" cy="12" r="4"/>';
-            const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-            if (on) {
-                document.documentElement.classList.add('dark');
-                document.body.style.backgroundColor = '#0f172a';
-                document.getElementById('darkIcon').innerHTML = sunIcon;
-                const mi = document.getElementById('darkIconMobile');
-                if (mi) mi.innerHTML = sunIcon;
-            } else {
-                document.documentElement.classList.remove('dark');
-                document.body.style.backgroundColor = '#f0f4f8';
-                document.getElementById('darkIcon').innerHTML = moonIcon;
-                const mi = document.getElementById('darkIconMobile');
-                if (mi) mi.innerHTML = moonIcon;
-            }
-        }
-        window.toggleDark = function () {
-            darkMode = !darkMode;
-            localStorage.setItem('dark_mode', darkMode);
-            applyDark(darkMode);
-            setTimeout(() => { renderChart(currentChart); renderDonut(); }, 100);
-        };
-
-        // ── GOAL ──────────────────────────────────────────────────────────────────────
-        window.setGoal = function () {
-            const val = parseInt(document.getElementById('goalInput').value);
-            if (!val || val < 1) return;
-            goalValue = val;
-            localStorage.setItem('monitor_goal', val);
-            document.getElementById('goalEmpty').classList.add('hidden');
-            document.getElementById('goalDisplay').classList.remove('hidden');
-            updateGoal();
-            showToast(`🎯 Meta definida: ${val} avaliações`, 'success');
-        };
-        function updateGoal() {
-            if (!goalValue || logs.length === 0) return;
-            const last = logs[logs.length-1];
-            const pct = Math.min(100, Math.round((last.total/goalValue)*100));
-            const remaining = Math.max(0, goalValue - last.total);
-            document.getElementById('goalCurrent').textContent = `Atual: ${last.total.toLocaleString()}`;
-            document.getElementById('goalTarget').textContent = `Meta: ${goalValue.toLocaleString()}`;
-            document.getElementById('goalBar').style.width = pct+'%';
-            document.getElementById('goalPercent').textContent = pct+'%';
-            document.getElementById('goalRemaining').textContent = remaining > 0 ? `Faltam ${remaining}` : '🎉 Meta atingida!';
-        }
-
-        // ── SORT ──────────────────────────────────────────────────────────────────────
-        window.sortBy = function (field) {
-            if (sortField === field) sortDir *= -1; else { sortField = field; sortDir = -1; }
-            renderTable();
-        };
-
-        // ── PERIOD FILTER ─────────────────────────────────────────────────────────────
-        window.setPeriod = function (days, btn) {
-            periodFilter = days;
-            document.querySelectorAll('.filter-btn').forEach(b => { b.classList.remove('active'); b.classList.add('text-gray-500'); });
-            btn.classList.add('active'); btn.classList.remove('text-gray-500');
-            renderChart(currentChart);
-        };
-        function getFilteredLogs() {
-            if (periodFilter === 0) return logs;
-            const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - periodFilter);
-            return logs.filter(l => new Date(l.date) >= cutoff);
-        }
-
-        // ── LINEAR REGRESSION ─────────────────────────────────────────────────────────
-        function linearRegression(data) {
-            const n = data.length; if (n < 2) return null;
-            let sumX=0,sumY=0,sumXY=0,sumX2=0;
-            data.forEach((y,x) => { sumX+=x; sumY+=y; sumXY+=x*y; sumX2+=x*x; });
-            const slope = (n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX);
-            const intercept = (sumY-slope*sumX)/n;
-            return { slope, intercept };
-        }
-
-        // ── HEALTH ────────────────────────────────────────────────────────────────────
-        function calcHealth() {
-            if (logs.length < 3) return null;
-            const drops = logs.filter(l => l.diff < 0).length;
-            const dropRatio = drops/logs.length;
-            const recentDrops = logs.slice(-3).filter(l => l.diff < 0).length;
-            if (recentDrops >= 2 || dropRatio > 0.4) return { label:'Crítico', icon:'🔴', cls:'health-critico' };
-            if (recentDrops === 1 || dropRatio > 0.25) return { label:'Regular', icon:'🟡', cls:'health-regular' };
-            if (dropRatio > 0.1) return { label:'Bom', icon:'🔵', cls:'health-bom' };
-            return { label:'Excelente', icon:'🟢', cls:'health-excelente' };
-        }
-
-        function calcStreak() {
-            let streak = 0;
-            for (let i = logs.length-1; i >= 0; i--) {
-                if (logs[i].diff >= 0) streak++; else break;
-            }
-            return streak;
-        }
-
-        function updateWeekly() {
-            if (logs.length < 2) { document.getElementById('weeklyBar').classList.add('hidden'); return; }
-            const cut1 = new Date(); cut1.setDate(cut1.getDate()-7);
-            const cut2 = new Date(); cut2.setDate(cut2.getDate()-14);
-            const curr = logs.filter(l => new Date(l.date) >= cut1);
-            const prev = logs.filter(l => { const d = new Date(l.date); return d >= cut2 && d < cut1; });
-            const cTotal = curr.reduce((s,l) => s+Math.max(0,l.diff),0);
-            const pTotal = prev.reduce((s,l) => s+Math.max(0,l.diff),0);
-            const diff = cTotal - pTotal;
-            const drops = curr.filter(l => l.diff < 0).length;
-            document.getElementById('weeklyBar').classList.remove('hidden');
-            document.getElementById('wkCurrent').textContent = `+${cTotal}`;
-            document.getElementById('wkPrev').textContent = `+${pTotal}`;
-            const diffEl = document.getElementById('wkDiff');
-            diffEl.textContent = (diff >= 0 ? '+' : '')+diff;
-            diffEl.className = `font-bold ${diff >= 0 ? 'text-green-600' : 'text-red-600'}`;
-            document.getElementById('wkDrops').textContent = drops;
-        }
-
-        // ── IMAGE ─────────────────────────────────────────────────────────────────────
-        function loadImageFile(file) {
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                currentBase64Image = ev.target.result; currentMimeType = file.type;
-                imagePreview.src = currentBase64Image;
-                document.getElementById('imagePreviewContainer').classList.remove('hidden');
-                document.getElementById('uploadPlaceholder').classList.add('hidden');
-                document.getElementById('imageFileName').textContent = file.name || 'imagem';
-                document.getElementById('aiSection').classList.remove('hidden');
-                hideAiStatus();
-            };
-            reader.readAsDataURL(file);
-        }
-        imageInput.addEventListener('change', e => loadImageFile(e.target.files[0]));
-        window.clearImage = function () {
-            currentBase64Image = null; currentMimeType = null; imageInput.value = '';
-            imagePreview.src = '';
-            document.getElementById('imagePreviewContainer').classList.add('hidden');
-            document.getElementById('uploadPlaceholder').classList.remove('hidden');
-            document.getElementById('aiSection').classList.add('hidden');
-            hideAiStatus();
-        };
-        window.handleDragOver = e => { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); };
-        window.handleDragLeave = () => document.getElementById('uploadZone').classList.remove('drag-over');
-        window.handleDrop = e => {
-            e.preventDefault(); document.getElementById('uploadZone').classList.remove('drag-over');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) loadImageFile(file);
-        };
-
-        // ── AI STATUS ─────────────────────────────────────────────────────────────────
-        function showAiStatus(msg, type) {
-            const bar = document.getElementById('aiStatusBar'), cont = document.getElementById('aiStatusContent');
-            bar.classList.remove('hidden');
-            const styles = { loading:'bg-indigo-50 text-indigo-700', success:'bg-green-50 text-green-700', error:'bg-red-50 text-red-700', warn:'bg-amber-50 text-amber-700' };
-            cont.className = `flex items-center gap-2 text-xs px-3 py-2 rounded-xl ${styles[type]||styles.loading}`;
-            cont.innerHTML = msg;
-        }
-        function hideAiStatus() { document.getElementById('aiStatusBar').classList.add('hidden'); }
-
-        // ── AI EXTRACTION (Groq + OpenRouter only) ────────────────────────────────────
-        aiBtn.addEventListener('click', async () => {
-            if (!currentBase64Image) return;
-            aiBtn.disabled = true;
-            aiBtnText.innerHTML = '<span class="loader" style="border-top-color:#fff;margin-right:6px;"></span>Analisando...';
-            showAiStatus('<span class="loader" style="width:13px;height:13px;border-width:2px;margin-right:4px;"></span>Iniciando extração com IA...', 'loading');
-
-            // ── Parse helper ────────────────────────────────────────────────────────
-            function parseAIResponse(rawText) {
-                if (!rawText) return null;
-                let cleaned = rawText
-                    .replace(/```json[\s\S]*?```/g, m => m.replace(/```json|```/g,''))
-                    .replace(/```/g,'').trim();
-                const jsonMatch = cleaned.match(/\{[\s\S]*?\}/);
-                if (!jsonMatch) return null;
-                cleaned = jsonMatch[0];
-                cleaned = cleaned.replace(/(\d),(\d)/g,'$1.$2');
-                cleaned = cleaned.replace(/,(\s*[}\]])/g,'$1');
-                try {
-                    const parsed = JSON.parse(cleaned);
-                    const total = parsed.total ?? parsed.quantidade ?? parsed.count ?? parsed.reviews ?? null;
-                    const rating = parsed.rating ?? parsed.nota ?? parsed.score ?? parsed.media ?? null;
-                    return { total: total !== null ? Number(total) : null, rating: rating !== null ? Number(rating) : null };
-                } catch { return null; }
-            }
-
-            const AI_PROMPT = 'Analyze this Google My Business screenshot. Extract: 1) The TOTAL number of reviews (integer); 2) The average rating (decimal 1.0-5.0). Return ONLY raw JSON, no markdown, no explanation: {"total": 145, "rating": 4.8}. If you cannot find the data clearly, return {}.';
-
-            let result = null;
-            let source = '';
-            let lastError = '';
-
-            // ── ETAPA 0: Tesseract.js (OCR local, sem API) ───────────────────────────
-            showAiStatus('<span class="loader" style="width:13px;height:13px;border-width:2px;margin-right:4px;"></span>OCR local (Tesseract.js)...', 'loading');
-            try {
-                const { data: { text } } = await Tesseract.recognize(currentBase64Image, 'por+eng');
-
-                // Rating: número decimal 1,X – 5,X (vírgula pt-BR ou ponto en-US)
-                const ratingMatch = text.match(/\b([1-5][,.](\d))\b/);
-                const ocrRating = ratingMatch ? parseFloat(ratingMatch[1].replace(',', '.')) : null;
-
-                // Total: (786) junto à nota | qualquer (N) com 2+ dígitos | antes/depois de "avaliações"
-                const countMatch = text.match(/[1-5][,.][\d][^\d(]*\((\d[\d.,]*)\)/)
-                                || text.match(/\((\d{2,}[\d.,]*)\)/)
-                                || text.match(/([\d][\d.,]*)\s*(?:avalia[çc][õo]es|opini[õo]es|reviews)/i)
-                                || text.match(/(?:avalia[çc][õo]es|opini[õo]es)\s*[:(]?\s*([\d][\d.,]*)/i);
-                const ocrTotal = countMatch ? (parseInt(countMatch[1].replace(/[^0-9]/g, ''), 10) || null) : null;
-
-                if ((ocrTotal !== null && ocrTotal > 0) || (ocrRating !== null && ocrRating >= 1 && ocrRating <= 5)) {
-                    result = { total: ocrTotal, rating: ocrRating };
-                    source = 'Tesseract OCR (local)';
-                } else {
-                    lastError = 'OCR local: dados não encontrados no texto da imagem.';
-                }
-            } catch (e) {
-                lastError = 'OCR local: ' + e.message;
-            }
-
-            // ── ETAPA 1: Groq (fallback se OCR local falhou) ─────────────────────────
-            if (!result) {
-                const GROQ_MODELS = [
-                    'meta-llama/llama-4-scout-17b-16e-instruct',
-                    'meta-llama/llama-4-maverick-17b-128e-instruct',
-                    'llava-v1.5-7b-4096-preview',
-                ];
-
-                for (const gModel of GROQ_MODELS) {
-                    showAiStatus(`<span class="loader" style="width:13px;height:13px;border-width:2px;margin-right:4px;border-top-color:#f55036"></span>1/2 Groq: <strong>${gModel}</strong>...`, 'loading');
-                    try {
-                        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
-                            body: JSON.stringify({
-                                model: gModel,
-                                temperature: 0.1,
-                                max_tokens: 200,
-                                messages: [{
-                                    role: 'user',
-                                    content: [
-                                        { type: 'text', text: AI_PROMPT },
-                                        { type: 'image_url', image_url: { url: currentBase64Image } }
-                                    ]
-                                }]
-                            })
-                        });
-
-                        if (groqResp.status === 401) { lastError = 'Chave Groq inválida (401).'; break; }
-                        if (groqResp.status === 429) { lastError = 'Rate limit Groq (429).'; break; }
-                        if (groqResp.status === 400 || groqResp.status === 404) {
-                            const eb = await groqResp.json().catch(() => ({}));
-                            lastError = eb?.error?.message || `Groq: modelo ${gModel} indisponível.`;
-                            continue;
-                        }
-                        if (!groqResp.ok) {
-                            const eb = await groqResp.json().catch(() => ({}));
-                            lastError = eb?.error?.message || `Groq erro ${groqResp.status}`;
-                            continue;
-                        }
-
-                        const gJson = await groqResp.json();
-                        const parsed = parseAIResponse(gJson?.choices?.[0]?.message?.content);
-                        if (parsed && (parsed.total !== null || parsed.rating !== null)) {
-                            result = parsed; source = `Groq · ${gModel}`; break;
-                        } else {
-                            lastError = `Groq (${gModel}) retornou dados inválidos.`;
-                        }
-                    } catch (e) {
-                        lastError = 'Conexão Groq: ' + e.message;
-                    }
-                }
-            }
-
-            // ── ETAPA 2: OpenRouter (fallback) ────────────────────────────────────────
-            if (!result) {
-                const OR_MODELS = [
-                    'meta-llama/llama-4-maverick:free',
-                    'meta-llama/llama-4-scout:free',
-                    'google/gemini-2.0-flash-exp:free',
-                    'google/gemini-flash-1.5:free',
-                    'mistralai/mistral-small-3.1-24b-instruct:free',
-                    'qwen/qwen2.5-vl-72b-instruct:free',
-                ];
-                for (const orModel of OR_MODELS) {
-                    showAiStatus(`<span class="loader" style="width:13px;height:13px;border-width:2px;margin-right:4px;border-top-color:#0ea5e9"></span>2/2 OpenRouter: <strong>${orModel}</strong>...`, 'loading');
-                    try {
-                        const orResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${OPENROUTER_KEY}`,
-                                'HTTP-Referer': window.location.href,
-                                'X-Title': 'Monitor de Avaliações Google'
-                            },
-                            body: JSON.stringify({
-                                model: orModel,
-                                temperature: 0.1,
-                                max_tokens: 200,
-                                messages: [{
-                                    role: 'user',
-                                    content: [
-                                        { type: 'text', text: AI_PROMPT },
-                                        { type: 'image_url', image_url: { url: currentBase64Image, detail: 'high' } }
-                                    ]
-                                }]
-                            })
-                        });
-
-                        if (orResp.status === 401) { lastError = 'Chave OpenRouter inválida (401).'; break; }
-                        if (orResp.status === 429) {
-                            lastError = 'Rate limit OpenRouter (429).';
-                            await new Promise(r => setTimeout(r, 1500));
-                            continue;
-                        }
-                        if (orResp.status === 400 || orResp.status === 404) {
-                            const eb = await orResp.json().catch(() => ({}));
-                            lastError = eb?.error?.message || `OpenRouter: modelo ${orModel} indisponível.`;
-                            continue;
-                        }
-                        if (!orResp.ok) {
-                            const eb = await orResp.json().catch(() => ({}));
-                            lastError = eb?.error?.message || `OpenRouter erro ${orResp.status}`;
-                            continue;
-                        }
-
-                        const orJson = await orResp.json();
-                        const parsed = parseAIResponse(orJson?.choices?.[0]?.message?.content);
-                        if (parsed && (parsed.total !== null || parsed.rating !== null)) {
-                            result = parsed; source = `OpenRouter · ${orModel}`; break;
-                        } else {
-                            lastError = `OpenRouter (${orModel}) retornou dados inválidos.`;
-                        }
-                    } catch (e) {
-                        lastError = 'Conexão OpenRouter: ' + e.message;
-                    }
-                }
-            }
-
-            // ── Aplicar resultado ────────────────────────────────────────────────────
-            try {
-                if (!result) throw new Error(lastError || 'Todos os modelos falharam. Preencha manualmente.');
-
-                let filled = 0;
-                if (result.total !== null && !isNaN(result.total) && result.total > 0) {
-                    totalInput.value = result.total;
-                    totalInput.classList.add('ring-2','ring-green-400');
-                    setTimeout(() => totalInput.classList.remove('ring-2','ring-green-400'), 2500);
-                    filled++;
-                }
-                if (result.rating !== null && !isNaN(result.rating) && result.rating >= 1 && result.rating <= 5) {
-                    ratingInput.value = result.rating;
-                    ratingInput.classList.add('ring-2','ring-green-400');
-                    setTimeout(() => ratingInput.classList.remove('ring-2','ring-green-400'), 2500);
-                    filled++;
-                }
-
-                if (filled > 0) {
-                    showAiStatus(`<svg class="w-4 h-4 shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg><span><strong>${filled} campo(s) preenchido(s):</strong> Total: <strong>${result.total??'—'}</strong> · Nota: <strong>${result.rating??'—'}</strong> <span style="opacity:0.55;font-size:10px">via ${source}</span></span>`, 'success');
-                    showToast(`✅ ${source} extraiu ${filled} dado(s)!`, 'success');
-                } else {
-                    showAiStatus('⚠️ Nenhum dado encontrado na imagem. Preencha manualmente.', 'warn');
-                    showToast('⚠️ Dados não encontrados na imagem.', 'error');
-                }
-            } catch (err) {
-                showAiStatus(`<svg class="w-4 h-4 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg><span><strong>Falha na extração:</strong> ${err.message}</span>`, 'error');
-                showToast('❌ Extração falhou. Preencha manualmente.', 'error');
-            } finally {
-                aiBtn.disabled = false;
-                aiBtnText.innerHTML = '✨ Extrair Dados com IA';
-            }
-        });
-
-        // ── FORM SUBMIT ────────────────────────────────────────────────────────────────
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-            if (!currentStore) { showToast('Faça login em uma loja primeiro.', 'error'); return; }
-            const date = dateInput.value;
-            const time = document.getElementById('timeInput').value;
-            const total = parseInt(totalInput.value, 10);
-            const rating = parseFloat(ratingInput.value);
-            const notes = notesInput.value.trim();
-            const existingOnDate = logs.find(l => l.date === date);
-            if (existingOnDate) {
-                const substituir = confirm(`Já existe um registro para ${new Date(date+'T12:00:00').toLocaleDateString('pt-BR')}.\nDeseja substituir pelo novo registro?`);
-                if (!substituir) return;
-            }
-            const logId = existingOnDate ? existingOnDate.id : Date.now();
-            const sorted = [...logs].sort((a,b) => new Date(a.date)-new Date(b.date));
-            const prevLog = sorted.filter(l => l.date < date).pop();
-            const diff = prevLog ? total - prevLog.total : 0;
-            const pct = prevLog ? parseFloat(((diff/prevLog.total)*100).toFixed(2)) : 0;
-            const newEntry = {
-                id: logId, date, time, total,
-                rating: isNaN(rating) ? null : rating,
-                diff, pct, notes,
-                image: currentBase64Image || null
-            };
-            const tempLogs = logs.filter(l => l.date !== date);
-            tempLogs.push(newEntry);
-            tempLogs.sort((a,b) => new Date(a.date)-new Date(b.date));
-            tempLogs.forEach((l,i) => {
-                l.diff = i === 0 ? 0 : l.total - tempLogs[i-1].total;
-                l.pct = i === 0 ? 0 : parseFloat(((l.diff/tempLogs[i-1].total)*100).toFixed(2));
-            });
-            const ref = storeRef();
-            if (ref) {
-                try {
-                    showToast('⏳ Salvando...', 'success');
-                    await saveLogEntry(newEntry);
-                    for (const l of tempLogs) {
-                        if (l.id !== newEntry.id) {
-                            await ref.doc(String(l.id)).update({ diff: l.diff, pct: l.pct });
-                        }
-                    }
-                } catch (err) {
-                    console.error('Firestore save error:', err);
-                    showToast('❌ Erro ao salvar. Verifique a conexão.', 'error');
-                    return;
-                }
-            }
-            totalInput.value = ''; ratingInput.value = ''; notesInput.value = '';
-            clearImage();
-            const next = new Date(date+'T12:00:00'); next.setDate(next.getDate()+1);
-            const ndd = String(next.getDate()).padStart(2,'0');
-            const nmo = String(next.getMonth()+1).padStart(2,'0');
-            const nyyyy = next.getFullYear();
-            if (dateUnlocked) {
-                dateInput.value = `${nyyyy}-${nmo}-${ndd}`;
-                document.getElementById('dateDisplay').value = `${ndd}/${nmo}/${nyyyy}`;
-            }
-            showToast('✅ Registro salvo com sucesso!', 'success');
-        });
-
-        // ── DELETE / CLEAR ─────────────────────────────────────────────────────────────
-        window.deleteRecord = id => {
-            const ref = storeRef();
-            if (ref) ref.doc(String(id)).delete().catch(err => console.error('Firestore delete error:', err));
-            showToast('Registro removido.', 'success');
-        };
-        window.clearAllData = async function () {
-            if (!confirm('Tem certeza que deseja apagar TODOS os registros?')) return;
-            const ref = storeRef();
-            if (ref) {
-                const snap = await ref.get();
-                const batch = db.batch();
-                snap.docs.forEach(d => batch.delete(d.ref));
-                await batch.commit().catch(err => console.error('Firestore clearAll error:', err));
-            }
-            showToast('Todos os registros foram apagados.', 'success');
-        };
-
-        // ── MASTER UPDATE ─────────────────────────────────────────────────────────────
-        function updateAll() {
-            logs.sort((a,b) => new Date(a.date)-new Date(b.date));
-            renderKPIs(); renderChart(currentChart); renderDonut();
-            renderTable(); renderInsights(); updateHeaderStats();
-            updateHealthBadge(); updateWeekly(); updateGoal(); updateStreak();
-        }
-
-        // ── KPIs ──────────────────────────────────────────────────────────────────────
-        function renderKPIs() {
-            const kpiRow = document.getElementById('kpiRow');
-            if (logs.length === 0) { kpiRow.innerHTML = ''; return; }
-            const last = logs[logs.length-1], first = logs[0];
-            const totalGrowth = last.total - first.total;
-            const drops = logs.filter(l => l.diff < 0);
-            const gains = logs.filter(l => l.diff > 0);
-            const biggest = [...logs].sort((a,b) => a.diff-b.diff)[0];
-            const ratingLogs = logs.filter(l => l.rating);
-            const avgRating = ratingLogs.length ? (ratingLogs.reduce((s,l) => s+l.rating,0)/ratingLogs.length) : 0;
-            const streak = calcStreak();
-            const avgGain = logs.length > 1 ? (totalGrowth/(logs.length-1)).toFixed(1) : 0;
-
-            const kpis = [
-                { label:'Total Atual', value:last.total.toLocaleString(), sub:totalGrowth>=0?`<span class="text-green-600 font-semibold">+${totalGrowth} no período</span>`:`<span class="text-red-500 font-semibold">${totalGrowth} no período</span>`, icon:'⭐', bg:'bg-blue-50', border:'border-blue-100', num:'text-blue-800' },
-                { label:'Última Variação', value:(last.diff>0?'+':'')+last.diff, sub:last.diff<0?`<span class="text-red-500">${last.pct}% · Queda</span>`:last.diff>0?`<span class="text-green-600">+${last.pct}% · Crescimento</span>`:`<span class="text-gray-400">Estável</span>`, icon:last.diff<0?'📉':'📈', bg:last.diff<0?'bg-red-50':'bg-green-50', border:last.diff<0?'border-red-100':'border-green-100', num:last.diff<0?'text-red-700':'text-green-800' },
-                { label:'Quedas', value:drops.length, sub:drops.length>0?`<span class="text-red-500">Maior: ${biggest.diff} em ${fmtDate(biggest.date).substring(0,5)}</span>`:`<span class="text-green-600">Nenhuma queda!</span>`, icon:'🔻', bg:drops.length>0?'bg-red-50':'bg-green-50', border:drops.length>0?'border-red-100':'border-green-100', num:drops.length>0?'text-red-700':'text-green-800' },
-                { label:'Nota Média', value:ratingLogs.length>0?avgRating.toFixed(1):'—', sub:ratingLogs.length>0?`<span class="text-amber-500">${'★'.repeat(Math.round(avgRating))}${'☆'.repeat(5-Math.round(avgRating))}</span>`:'<span class="text-gray-400">Sem notas</span>', icon:'🌟', bg:'bg-amber-50', border:'border-amber-100', num:'text-amber-800' },
-                { label:'Média/Dia', value:(avgGain>0?'+':'')+avgGain, sub:`<span class="text-gray-500">🔥 Streak: ${streak} dia(s)</span>`, icon:'📊', bg:'bg-indigo-50', border:'border-indigo-100', num:'text-indigo-800' }
-            ];
-
-            kpiRow.innerHTML = kpis.map(k =>
-                `<div class="kpi-card ${k.bg} border ${k.border} rounded-2xl p-4 shadow-sm">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-gray-500 mb-0.5">${k.label}</p>
-                            <p class="text-2xl font-black ${k.num} leading-tight">${k.value}</p>
-                            <p class="text-xs mt-1">${k.sub}</p>
-                        </div>
-                        <span class="text-2xl shrink-0">${k.icon}</span>
-                    </div>
-                </div>`
-            ).join('');
-        }
-
-        function updateHeaderStats() {
-            const hs = document.getElementById('headerStats');
-            if (logs.length === 0) { hs.classList.add('hidden'); return; }
-            hs.classList.remove('hidden');
-            const last = logs[logs.length-1];
-            document.getElementById('hTotal').textContent = last.total.toLocaleString();
-            const tw = document.getElementById('hTrendWrap');
-            const ht = document.getElementById('hTrend');
-            if (last.diff < 0) {
-                tw.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-red-50 border-red-100';
-                ht.innerHTML = `<span class="text-red-600 font-bold text-xs">${last.diff} (${last.pct}%) 📉</span>`;
-            } else if (last.diff > 0) {
-                tw.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-green-50 border-green-100';
-                ht.innerHTML = `<span class="text-green-600 font-bold text-xs">+${last.diff} (+${last.pct}%) 📈</span>`;
-            } else {
-                tw.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-gray-50 border-gray-100';
-                ht.innerHTML = `<span class="text-gray-400 text-xs">— Estável</span>`;
-            }
-        }
-
-        function updateHealthBadge() {
-            const badge = document.getElementById('healthBadge');
-            const health = calcHealth();
-            if (!health) { badge.classList.add('hidden'); return; }
-            badge.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-sm ${health.cls}`;
-            document.getElementById('healthIcon').textContent = health.icon;
-            document.getElementById('healthLabel').textContent = health.label;
-            badge.classList.remove('hidden');
-        }
-
-        function updateStreak() {
-            const streak = calcStreak();
-            const badge = document.getElementById('streakBadge');
-            if (streak >= 2) {
-                badge.classList.remove('hidden'); badge.classList.add('flex');
-                document.getElementById('streakCount').textContent = streak;
-                if (streak >= 5) badge.classList.add('streak-glow');
-            } else { badge.classList.add('hidden'); }
-        }
-
-        // ── CHART SWITCH ──────────────────────────────────────────────────────────────
-        window.switchChart = function (type) {
-            currentChart = type;
-            document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.classList.add('text-gray-500'); });
-            const idx = ['volume','variacao','nota','pct'].indexOf(type);
-            const btns = document.querySelectorAll('.tab-btn');
-            if (btns[idx]) { btns[idx].classList.add('active'); btns[idx].classList.remove('text-gray-500'); }
-            renderChart(type);
-        };
-
-        // ── MAIN CHART ────────────────────────────────────────────────────────────────
-        function renderChart(type) {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            const empty = document.getElementById('chartEmpty');
-            const filtered = getFilteredLogs();
-            const showForecast = document.getElementById('forecastToggle').checked;
-            if (filtered.length < 2) {
-                empty.classList.remove('hidden');
-                if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
-                return;
-            }
-            empty.classList.add('hidden');
-            if (chartInstance) chartInstance.destroy();
-            const labels = filtered.map(l => fmtDate(l.date).substring(0,5));
-            const gridColor = darkMode ? '#1e293b' : '#f1f5f9';
-            const tickColor = darkMode ? '#475569' : '#94a3b8';
-
-            if (type === 'volume') {
-                let fLabels=[], fData=[];
-                if (showForecast) {
-                    const vals = filtered.map(l => l.total);
-                    const reg = linearRegression(vals);
-                    if (reg) {
-                        const lastDate = new Date(filtered[filtered.length-1].date);
-                        for (let i=1;i<=3;i++) {
-                            const d = new Date(lastDate); d.setDate(d.getDate()+i);
-                            fLabels.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`);
-                            fData.push(Math.round(reg.slope*(vals.length-1+i)+reg.intercept));
-                        }
-                    }
-                }
-                const allLabels = [...labels,...fLabels];
-                const ptColors = filtered.map(l => l.diff<0?'#ef4444':l.diff>0?'#3b82f6':'#94a3b8');
-                const datasets = [{
-                    label:'Total', data:[...filtered.map(l=>l.total),...fData.map(()=>null)],
-                    borderColor:'#3b82f6',
-                    backgroundColor: ctx2 => { const g=ctx2.chart.ctx.createLinearGradient(0,0,0,220); g.addColorStop(0,'rgba(59,130,246,0.18)'); g.addColorStop(1,'rgba(59,130,246,0.01)'); return g; },
-                    borderWidth:2.5, pointBackgroundColor:[...ptColors,...fData.map(()=>'transparent')],
-                    pointBorderColor:'#fff', pointBorderWidth:2, pointRadius:6, pointHoverRadius:9, fill:true, tension:0.35
-                }];
-                if (showForecast && fData.length > 0) {
-                    const conn = filtered[filtered.length-1].total;
-                    datasets.push({ label:'Previsão', data:[...filtered.map(()=>null),conn,...fData.slice(1)], borderColor:'#f97316', backgroundColor:'rgba(249,115,22,0.04)', borderWidth:2, borderDash:[6,4], pointBackgroundColor:'#f97316', pointBorderColor:'#fff', pointBorderWidth:2, pointRadius:5, fill:false, tension:0.35 });
-                }
-                chartInstance = new Chart(ctx, { type:'line', data:{labels:allLabels,datasets}, options:chartOptions('Volume',v=>`${v} avaliações`,type,gridColor,tickColor,filtered) });
-            } else if (type === 'variacao') {
-                const diffs = filtered.map(l => l.diff);
-                chartInstance = new Chart(ctx, {
-                    type:'bar',
-                    data:{labels,datasets:[{label:'Variação',data:diffs,backgroundColor:diffs.map(d=>d<0?'rgba(239,68,68,0.75)':d>0?'rgba(59,130,246,0.75)':'rgba(148,163,184,0.5)'),borderColor:diffs.map(d=>d<0?'#ef4444':d>0?'#3b82f6':'#94a3b8'),borderWidth:1.5,borderRadius:6}]},
-                    options:chartOptions('Variação',v=>(v>0?'+':'')+v+' avaliações',type,gridColor,tickColor,filtered)
-                });
-            } else if (type === 'nota') {
-                chartInstance = new Chart(ctx, {
-                    type:'line',
-                    data:{labels,datasets:[{label:'Nota',data:filtered.map(l=>l.rating),borderColor:'#f59e0b',backgroundColor:ctx2=>{const g=ctx2.chart.ctx.createLinearGradient(0,0,0,220);g.addColorStop(0,'rgba(245,158,11,0.15)');g.addColorStop(1,'rgba(245,158,11,0.01)');return g;},borderWidth:2.5,pointBackgroundColor:'#f59e0b',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:5,fill:true,tension:0.35,spanGaps:true}]},
-                    options:chartOptions('Nota',v=>`${v} ★`,type,gridColor,tickColor,filtered)
-                });
-            } else if (type === 'pct') {
-                const pcts = filtered.map(l => l.pct||0);
-                chartInstance = new Chart(ctx, {
-                    type:'bar',
-                    data:{labels,datasets:[{label:'%',data:pcts,backgroundColor:pcts.map(d=>d<0?'rgba(239,68,68,0.75)':d>0?'rgba(34,197,94,0.75)':'rgba(148,163,184,0.5)'),borderColor:pcts.map(d=>d<0?'#ef4444':d>0?'#22c55e':'#94a3b8'),borderWidth:1.5,borderRadius:6}]},
-                    options:chartOptions('Variação %',v=>(v>0?'+':'')+v+'%',type,gridColor,tickColor,filtered)
-                });
-            }
-        }
-
-        function chartOptions(label, tooltipFmt, type, gridColor, tickColor, filtered) {
-            return {
-                responsive:true, maintainAspectRatio:false,
-                plugins: {
-                    legend:{display:false},
-                    tooltip:{
-                        backgroundColor:'#1e293b',titleColor:'#94a3b8',bodyColor:'#f1f5f9',
-                        padding:12,cornerRadius:10,boxPadding:4,
-                        callbacks:{
-                            title: ctx => { const i=ctx[0].dataIndex; return i<filtered.length?fmtDate(filtered[i].date):'Previsão'; },
-                            label: ctx => tooltipFmt(ctx.parsed.y),
-                            afterLabel: ctx => {
-                                const i=ctx.dataIndex;
-                                if (i<filtered.length) {
-                                    const l=filtered[i]; const lines=[];
-                                    if (type==='volume' && l.diff!==0) lines.push(`Variação: ${l.diff>0?'+':''}${l.diff} (${l.pct}%)`);
-                                    if (l.notes) lines.push(`📝 ${l.notes}`);
-                                    return lines;
-                                }
-                                return '';
-                            }
-                        }
-                    }
-                },
-                scales:{
-                    y:{beginAtZero:type==='variacao'||type==='pct',ticks:{precision:type==='nota'?1:type==='pct'?1:0,color:tickColor,font:{size:11}},grid:{color:gridColor},border:{display:false}},
-                    x:{grid:{display:false},ticks:{color:tickColor,font:{size:11}},border:{display:false}}
-                }
-            };
-        }
-
-        // ── DONUT ─────────────────────────────────────────────────────────────────────
-        let donutFocusMode = null;
-
-        function renderDonut() {
-            const gains = logs.filter(l => l.diff>0).length;
-            const drops = logs.filter(l => l.diff<0).length;
-            const neutral = logs.filter(l => l.diff===0).length;
-            const total = logs.length;
-            const gainPct = total>0?Math.round((gains/total)*100):0;
-            const dropPct = total>0?Math.round((drops/total)*100):0;
-            const neutralPct = total>0?Math.round((neutral/total)*100):0;
-
-            document.getElementById('donutGain').textContent = gains;
-            document.getElementById('donutDrop').textContent = drops;
-            document.getElementById('donutNeutral').textContent = neutral;
-            document.getElementById('donutMain').textContent = total;
-            document.getElementById('donutSubLabel').textContent = total>0?'monitorados':'';
-            document.getElementById('donutGainPct').textContent = total>0?gainPct+'%':'';
-            document.getElementById('donutDropPct').textContent = total>0?dropPct+'%':'';
-            document.getElementById('donutNeutralPct').textContent = total>0?neutralPct+'%':'';
-            document.getElementById('donutBarGain').style.width = gainPct+'%';
-            document.getElementById('donutBarDrop').style.width = dropPct+'%';
-            document.getElementById('donutBarNeutral').style.width = neutralPct+'%';
-
-            const ctx = document.getElementById('donutChart').getContext('2d');
-            if (donutInstance) donutInstance.destroy();
-            if (total === 0) return;
-
-            const canvas = document.getElementById('donutChart');
-            const isMobile = window.innerWidth <= 640;
-            const donutSize = isMobile ? 170 : 210;
-            canvas.width = donutSize; canvas.height = donutSize;
-            const wrapper = canvas.closest('.donut-wrapper');
-            if (wrapper) { wrapper.style.width = donutSize+'px'; wrapper.style.height = donutSize+'px'; }
-
-            donutInstance = new Chart(ctx, {
-                type:'doughnut',
-                data:{
-                    labels:['Ganhos','Quedas','Neutros'],
-                    datasets:[{
-                        data:[gains||0.001,drops||0.001,neutral||0.001],
-                        backgroundColor:gains===0&&drops===0&&neutral===0?['#e2e8f0']:['#4ade80','#f87171','#d1d5db'],
-                        borderWidth:gains===0&&drops===0&&neutral===0?0:4,
-                        borderColor:darkMode?'#1e293b':'#ffffff',
-                        hoverOffset:12
-                    }]
-                },
-                options:{
-                    responsive:false, maintainAspectRatio:false, cutout:'70%',
-                    animation:{animateRotate:true,duration:800,easing:'easeOutQuart'},
-                    plugins:{
-                        legend:{display:false},
-                        tooltip:{
-                            backgroundColor:'#1e293b',titleColor:'#94a3b8',bodyColor:'#f1f5f9',padding:12,cornerRadius:10,
-                            callbacks:{
-                                label:ctx=>{
-                                    const real=[gains,drops,neutral][ctx.dataIndex];
-                                    return `${ctx.label}: ${real} dia(s) (${total>0?Math.round(real/total*100):0}%)`;
-                                }
-                            }
-                        }
-                    },
-                    onClick:(e,elements)=>{
-                        if (!elements.length) { donutFocus(null); return; }
-                        const map=['gain','drop','neutral'];
-                        donutFocus(map[elements[0].index]);
-                    }
-                }
-            });
-        }
-
-        window.donutFocus = function (type) {
-            donutFocusMode = donutFocusMode===type?null:type;
-            const cards={gain:'donutCardGain',drop:'donutCardDrop',neutral:'donutCardNeutral'};
-            const labels={gain:'📈 Ganhos',drop:'🔻 Quedas',neutral:'● Neutros'};
-            const counts={
-                gain:logs.filter(l=>l.diff>0).length,
-                drop:logs.filter(l=>l.diff<0).length,
-                neutral:logs.filter(l=>l.diff===0).length
-            };
-            const total = logs.length;
-            Object.values(cards).forEach(id=>{
-                const el=document.getElementById(id);
-                el.style.boxShadow=''; el.style.transform=''; el.style.transition='all 0.2s';
-            });
-            if (donutFocusMode) {
-                const el=document.getElementById(cards[donutFocusMode]);
-                const shadows={gain:'0 0 0 2px #4ade80',drop:'0 0 0 2px #f87171',neutral:'0 0 0 2px #d1d5db'};
-                el.style.boxShadow=shadows[donutFocusMode]; el.style.transform='scale(1.07)';
-                const pct=total>0?Math.round((counts[donutFocusMode]/total)*100):0;
-                document.getElementById('donutMain').textContent=counts[donutFocusMode];
-                document.getElementById('donutSubLabel').textContent=labels[donutFocusMode]+' · '+pct+'%';
-            } else {
-                donutFocusMode=null;
-                document.getElementById('donutMain').textContent=total;
-                document.getElementById('donutSubLabel').textContent=total>0?'monitorados':'';
-            }
-        };
-
-        // ── TABLE ─────────────────────────────────────────────────────────────────────
-        function renderTable() {
-            const search=(document.getElementById('searchInput')?.value||'').toLowerCase();
-            let data=[...logs];
-            if (search) data=data.filter(l=>fmtDate(l.date).includes(search)||(l.notes||'').toLowerCase().includes(search));
-            data.sort((a,b)=>{
-                if (sortField==='date') return sortDir*(new Date(a.date)-new Date(b.date));
-                return sortDir*(Number(a[sortField])-Number(b[sortField]));
-            });
-            const dropCount=logs.filter(l=>l.diff<0).length;
-            const gainCount=logs.filter(l=>l.diff>0).length;
-            const totalGained=logs.filter(l=>l.diff>0).reduce((s,l)=>s+l.diff,0);
-            const totalLost=Math.abs(logs.filter(l=>l.diff<0).reduce((s,l)=>s+l.diff,0));
-
-            const dc=document.getElementById('dropCount'),gc=document.getElementById('gainCount');
-            const tg=document.getElementById('totalGainedBadge'),tl=document.getElementById('totalLostBadge');
-
-            if (dropCount>0) { document.getElementById('dropCountNum').textContent=dropCount; document.getElementById('dropCountPlural').textContent=dropCount>1?'s':''; dc.classList.remove('hidden'); dc.classList.add('flex'); } else { dc.classList.add('hidden'); dc.classList.remove('flex'); }
-            if (gainCount>0) { document.getElementById('gainCountNum').textContent=gainCount; document.getElementById('gainCountPlural').textContent=gainCount>1?'s':''; gc.classList.remove('hidden'); gc.classList.add('flex'); } else { gc.classList.add('hidden'); gc.classList.remove('flex'); }
-            if (totalGained>0) { document.getElementById('totalGainedNum').textContent=totalGained; tg.classList.remove('hidden'); tg.classList.add('flex'); } else { tg.classList.add('hidden'); tg.classList.remove('flex'); }
-            if (totalLost>0) { document.getElementById('totalLostNum').textContent=totalLost; tl.classList.remove('hidden'); tl.classList.add('flex'); } else { tl.classList.add('hidden'); tl.classList.remove('flex'); }
-
-            if (data.length===0) {
-                tableBody.innerHTML=`<tr><td colspan="8" class="px-5 py-12 text-center text-gray-400 text-sm">${search?'Nenhum resultado encontrado.':'Nenhum registro ainda. Adicione o primeiro acima!'}</td></tr>`;
-                const mc=document.getElementById('mobileCards');
-                if (mc) mc.innerHTML=`<div class="text-center text-gray-400 text-sm py-8">${search?'Nenhum resultado encontrado.':'Nenhum registro ainda.'}</div>`;
-                return;
-            }
-
-            tableBody.innerHTML=data.map((log,i)=>{
-                const isDrop=log.diff<0,isGain=log.diff>0;
-                const rowCls=isDrop?'row-drop':isGain?'row-gain':'';
-                const diffBadge=log.diff!==0?`<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${isDrop?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${isDrop?'▼':'▲'} ${Math.abs(log.diff)}</span>`:`<span class="text-gray-300">—</span>`;
-                const pctBadge=log.pct!==0&&log.pct!==undefined?`<span class="text-xs font-bold ${isDrop?'text-red-500':'text-green-600'}">${log.pct>0?'+':''}${log.pct}%</span>`:`<span class="text-gray-300">—</span>`;
-                const statusBadge=isDrop?`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">🔻 Queda</span>`:isGain?`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">📈 Ganho</span>`:`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500">● Neutro</span>`;
-                const stars=log.rating?`<span class="flex items-center gap-1 text-amber-500 font-semibold text-xs">${log.rating}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></span>`:`<span class="text-gray-300">—</span>`;
-                const notesCell=log.notes?`<button onclick="showNotes('${encodeURIComponent(log.notes)}')" class="max-w-28 truncate block text-xs text-blue-500 hover:text-blue-700 underline text-left">${log.notes.substring(0,20)}${log.notes.length>20?'…':''}</button>`:`<span class="text-gray-300">—</span>`;
-                return `<tr class="hover:brightness-95 transition-all fade-up ${rowCls}" style="animation-delay:${i*12}ms">
-                    <td class="px-5 py-3 whitespace-nowrap"><span class="text-sm font-semibold text-gray-800">${fmtDate(log.date).substring(0,5)}</span><span class="text-xs text-gray-400 ml-1">${log.time||''}</span></td>
-                    <td class="px-5 py-3 whitespace-nowrap text-sm font-black text-gray-900">${log.total.toLocaleString()}</td>
-                    <td class="px-5 py-3 whitespace-nowrap">${stars}</td>
-                    <td class="px-5 py-3 whitespace-nowrap">${diffBadge}</td>
-                    <td class="px-5 py-3 whitespace-nowrap">${pctBadge}</td>
-                    <td class="px-5 py-3 whitespace-nowrap">${statusBadge}</td>
-                    <td class="px-5 py-3 whitespace-nowrap">${notesCell}</td>
-                    <td class="px-5 py-3 whitespace-nowrap">${log.image?`<button onclick="showImageById(${log.id})" class="text-blue-500 hover:text-blue-700 text-xs font-semibold underline">Ver Print</button>`:`<span class="text-gray-300 text-xs">—</span>`}</td>
-                </tr>`;
-            }).join('');
-
-            const mc=document.getElementById('mobileCards');
-            if (mc) {
-                mc.innerHTML=data.map((log,i)=>{
-                    const isDrop=log.diff<0,isGain=log.diff>0;
-                    const cardCls=isDrop?'card-drop':isGain?'card-gain':'';
-                    const statusEmoji=isDrop?'🔻':isGain?'📈':'●';
-                    const statusText=isDrop?'Queda':isGain?'Ganho':'Neutro';
-                    const statusColor=isDrop?'text-red-600':isGain?'text-green-600':'text-gray-400';
-                    const diffText=log.diff!==0?`<span class="font-bold ${isDrop?'text-red-600':'text-green-600'}">${log.diff>0?'+':''}${log.diff}</span>`:`<span class="text-gray-400">—</span>`;
-                    const pctText=log.pct!==0&&log.pct!==undefined?`<span class="${isDrop?'text-red-500':'text-green-600'}">(${log.pct>0?'+':''}${log.pct}%)</span>`:'';
-                    const ratingText=log.rating?`<span class="text-amber-500 font-semibold">${log.rating} ★</span>`:`<span class="text-gray-300">—</span>`;
-                    const actions=[];
-                    if (log.notes) actions.push(`<button onclick="showNotes('${encodeURIComponent(log.notes)}')" class="text-xs text-blue-500 font-semibold">📝 Obs</button>`);
-                    if (log.image) actions.push(`<button onclick="showImageById(${log.id})" class="text-xs text-blue-500 font-semibold">🖼️ Print</button>`);
-                    return `<div class="mobile-card ${cardCls} fade-up" style="animation-delay:${i*20}ms">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm font-bold text-gray-800">${fmtDate(log.date).substring(0,5)}</span>
-                                <span class="text-xs text-gray-400">${log.time||''}</span>
-                            </div>
-                            <span class="text-xs font-bold ${statusColor}">${statusEmoji} ${statusText}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div><div class="text-xs text-gray-400">Total</div><div class="text-lg font-black text-gray-900">${log.total.toLocaleString()}</div></div>
-                                <div><div class="text-xs text-gray-400">Variação</div><div class="text-sm font-semibold">${diffText} ${pctText}</div></div>
-                                <div><div class="text-xs text-gray-400">Nota</div><div class="text-sm">${ratingText}</div></div>
-                            </div>
-                            ${actions.length>0?`<div class="flex items-center gap-2">${actions.join('')}</div>`:''}
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-        }
-
-        // ── INSIGHTS ──────────────────────────────────────────────────────────────────
-        function renderInsights() {
-            const list=document.getElementById('insightsList');
-            if (logs.length<2) { list.innerHTML=`<p class="text-xs text-gray-400">Adicione ao menos 2 registros para ver a análise automática.</p>`; return; }
-            const insights=[];
-            const last=logs[logs.length-1],first=logs[0];
-            const drops=logs.filter(l=>l.diff<0);
-            const gains=logs.filter(l=>l.diff>0);
-            const totalGain=last.total-first.total;
-            const maxDrop=drops.length?Math.min(...drops.map(l=>l.diff)):0;
-            const maxGain=gains.length?Math.max(...gains.map(l=>l.diff)):0;
-            const streak=calcStreak();
-            const ratingLogs=logs.filter(l=>l.rating!=null);
-            const ratingTrend=ratingLogs.length>=2?ratingLogs[ratingLogs.length-1].rating-ratingLogs[ratingLogs.length-2].rating:0;
-            const vals=logs.map(l=>l.total);
-            const reg=linearRegression(vals);
-            if (reg&&logs.length>=4) {
-                const next3=Math.round(reg.slope*(vals.length+2)+reg.intercept);
-                if (reg.slope<-0.5) insights.push({type:'drop',text:`🔮 <strong>Previsão:</strong> Tendência de queda. Estimativa: ~${next3} em 3 dias.`});
-                else if (reg.slope>0.5) insights.push({type:'gain',text:`🔮 <strong>Previsão:</strong> Tendência positiva. Estimativa: ~${next3} em 3 dias.`});
-                else insights.push({type:'neutral',text:`🔮 <strong>Previsão:</strong> Volume estável (~${next3} estimadas em 3 dias).`});
-            }
-            if (streak>=3) insights.push({type:'gain',text:`🔥 <strong>Streak:</strong> ${streak} dias consecutivos sem queda!`});
-            if (last.diff<0) insights.push({type:'drop',text:`🔻 <strong>Queda recente:</strong> ${Math.abs(last.diff)} avaliação(ões) em ${fmtDate(last.date).substring(0,5)} (${last.pct}%).`});
-            else if (last.diff>0) insights.push({type:'gain',text:`📈 <strong>Crescimento:</strong> +${last.diff} avaliações em ${fmtDate(last.date).substring(0,5)} (+${last.pct}%).`});
-            const consec=getConsecutiveDrops();
-            if (consec>=2) insights.push({type:'drop',text:`⚠️ <strong>Alerta:</strong> ${consec} dias consecutivos com queda — considere abrir chamado no suporte Google.`});
-            if (totalGain>0) insights.push({type:'gain',text:`✅ <strong>Saldo do período:</strong> +${totalGain} avaliações (${parseFloat(((totalGain/first.total)*100).toFixed(1))}% de crescimento).`});
-            else if (totalGain<0) insights.push({type:'drop',text:`❌ <strong>Saldo negativo:</strong> ${totalGain} avaliações no período.`});
-            if (drops.length>0) { const bd=[...logs].sort((a,b)=>a.diff-b.diff)[0]; insights.push({type:'drop',text:`📉 <strong>Maior queda:</strong> ${maxDrop} avaliações em ${fmtDate(bd.date).substring(0,5)}.`}); }
-            if (gains.length>0) { const bg=[...logs].sort((a,b)=>b.diff-a.diff)[0]; insights.push({type:'gain',text:`🚀 <strong>Melhor dia:</strong> +${maxGain} avaliações em ${fmtDate(bg.date).substring(0,5)}.`}); }
-            if (ratingTrend<0) insights.push({type:'warn',text:`⭐ <strong>Nota em queda:</strong> ${ratingLogs[ratingLogs.length-2].rating} → ${ratingLogs[ratingLogs.length-1].rating}.`});
-            else if (ratingTrend>0) insights.push({type:'gain',text:`⭐ <strong>Nota em alta:</strong> ${ratingLogs[ratingLogs.length-2].rating} → ${ratingLogs[ratingLogs.length-1].rating}.`});
-            const dropRatio=Math.round((drops.length/logs.length)*100);
-            if (dropRatio>30) insights.push({type:'warn',text:`📊 <strong>${dropRatio}% dos dias com queda</strong> — padrão acima do normal.`});
-            else if (dropRatio<=10&&logs.length>=5) insights.push({type:'neutral',text:`📊 <strong>Perfil saudável:</strong> Apenas ${dropRatio}% dos dias com queda.`});
-            if (goalValue>0&&logs.length>0) {
-                const pct=Math.round((last.total/goalValue)*100);
-                if (pct>=100) insights.push({type:'gain',text:`🎯 <strong>Meta atingida!</strong> ${last.total}/${goalValue} (${pct}%).`});
-                else insights.push({type:'neutral',text:`🎯 <strong>Meta:</strong> ${pct}% concluído. Faltam ${goalValue-last.total}.`});
-            }
-            const typeMap={drop:'insight-drop',gain:'insight-gain',neutral:'insight-neutral',warn:'insight-warn'};
-            list.innerHTML=insights.map(i=>`<div class="insight-item ${typeMap[i.type]}">${i.text}</div>`).join('');
-        }
-
-        function getConsecutiveDrops() {
-            let c=0;
-            for (let i=logs.length-1;i>=0;i--) { if (logs[i].diff<0) c++; else break; }
-            return c;
-        }
-
-        // ── EXPORT CSV ────────────────────────────────────────────────────────────────
-        window.exportCSV = function () {
-            if (logs.length===0) { showToast('Nenhum dado para exportar.', 'error'); return; }
-            const sep=';';
-            const cols=['Data','Horário','Total de Avaliações','Nota Média','Variação (Qtd)','Variação (%)','Status','Observações'];
-            const header=cols.join(sep);
-            const rows=[...logs].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(l=>{
-                const st=l.diff<0?'Queda':l.diff>0?'Ganho':'Neutro';
-                const pctFmt=l.pct!=null?(l.pct>0?'+':'')+l.pct+'%':'';
-                const diffFmt=l.diff>0?'+'+l.diff:String(l.diff);
-                const safe=v=>`"${String(v||'').replace(/"/g,'""')}"`;
-                return [safe(fmtDate(l.date)),safe(l.time||''),l.total,l.rating!=null?l.rating:'',diffFmt,pctFmt,st,safe(l.notes||'')].join(sep);
-            }).join('\r\n');
-            const blob=new Blob(['\uFEFF'+header+'\r\n'+rows],{type:'text/csv;charset=utf-8;'});
-            const url=URL.createObjectURL(blob);
-            const a=document.createElement('a'); a.href=url; a.download=`avaliacoes_google_${new Date().toISOString().split('T')[0]}.csv`; a.click();
-            URL.revokeObjectURL(url);
-            showToast('📥 CSV exportado!', 'success');
-        };
-
-        // ── EXPORT PDF ────────────────────────────────────────────────────────────────
-        window.exportPDF = function () {
-            if (logs.length===0) { showToast('Nenhum dado para exportar.', 'error'); return; }
-            const sorted=[...logs].sort((a,b)=>new Date(a.date)-new Date(b.date));
-            const last=sorted[sorted.length-1],first=sorted[0];
-            const drops=sorted.filter(l=>l.diff<0),gains=sorted.filter(l=>l.diff>0);
-            const health=calcHealth();
-            const rows=sorted.map(l=>{
-                const st=l.diff<0?'🔻 Queda':l.diff>0?'📈 Ganho':'● Neutro';
-                return `<tr style="background:${l.diff<0?'#fff5f5':l.diff>0?'#f0fdf4':'#fff'}">
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9">${fmtDate(l.date)}</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9">${l.time||'-'}</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-weight:700">${l.total}</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9">${l.rating??'-'}</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-weight:700;color:${l.diff<0?'#ef4444':l.diff>0?'#22c55e':'#94a3b8'}">${l.diff>0?'+':''}${l.diff}</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;color:${l.diff<0?'#ef4444':l.diff>0?'#22c55e':'#94a3b8'}">${l.pct>0?'+':''}${l.pct??0}%</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9">${st}</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#64748b">${l.notes||'-'}</td>
-                </tr>`;
-            }).join('');
-            const totalGainedPDF=gains.reduce((s,l)=>s+l.diff,0);
-            const totalLostPDF=Math.abs(drops.reduce((s,l)=>s+l.diff,0));
-            const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório de Avaliações</title>
-            <style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}h1{color:#1e40af}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#f8fafc;padding:8px 10px;text-align:left;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0}.kpi{display:inline-block;background:#f8fafc;border-radius:8px;padding:12px 20px;margin:6px;min-width:120px}.kn{font-size:24px;font-weight:800;color:#1e40af}.kl{font-size:11px;color:#64748b;margin-top:2px}</style>
-            </head><body>
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-                <div style="background:#2563eb;color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:18px">📊</div>
-                <div><h1 style="margin:0;font-size:20px">Relatório de Avaliações Google</h1><p style="margin:2px 0 0;font-size:12px;color:#64748b">Gerado em ${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p></div>
-                <div style="margin-left:auto;background:${health?.cls?.includes('critico')?'#ef4444':health?.cls?.includes('regular')?'#f59e0b':health?.cls?.includes('bom')?'#3b82f6':'#22c55e'};color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700">${health?.icon} ${health?.label||'—'}</div>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:0;margin-bottom:24px">
-                <div class="kpi"><div class="kn">${last.total}</div><div class="kl">⭐ Total Atual</div></div>
-                <div class="kpi"><div class="kn" style="color:${(last.total-first.total)>=0?'#16a34a':'#dc2626'}">${(last.total-first.total)>=0?'+':''}${last.total-first.total}</div><div class="kl">📊 Saldo do Período</div></div>
-                <div class="kpi"><div class="kn" style="color:#f59e0b">${last.rating??'-'}</div><div class="kl">🌟 Nota Atual</div></div>
-                <div class="kpi"><div class="kn" style="color:#dc2626">${drops.length}</div><div class="kl">🔻 Dias com Queda</div></div>
-                <div class="kpi"><div class="kn" style="color:#16a34a">${gains.length}</div><div class="kl">📈 Dias com Ganho</div></div>
-                <div class="kpi" style="background:#f0fdf4;border:1.5px solid #bbf7d0"><div class="kn" style="color:#16a34a">✅ ${totalGainedPDF}</div><div class="kl" style="color:#15803d;font-weight:700">Total Ganhas</div></div>
-                <div class="kpi" style="background:#fff5f5;border:1.5px solid #fecaca"><div class="kn" style="color:#dc2626">❌ ${totalLostPDF}</div><div class="kl" style="color:#b91c1c;font-weight:700">Total Perdidas</div></div>
-            </div>
-            <table><thead><tr><th>Data</th><th>Horário</th><th>Total</th><th>Nota</th><th>Variação</th><th>%</th><th>Status</th><th>Observações</th></tr></thead><tbody>${rows}</tbody></table>
-            <p style="margin-top:24px;font-size:11px;color:#94a3b8;text-align:center">Monitor de Avaliações Google Meu Negócio · Relatório confidencial</p>
-            <script>window.onload=()=>window.print();<\/script></body></html>`;
-            const w=window.open('','_blank'); w.document.write(html); w.document.close();
-            showToast('📄 PDF aberto para impressão!', 'success');
-        };
-
-        // ── SHARE ─────────────────────────────────────────────────────────────────────
-        window.shareResume = function () {
-            if (logs.length===0) { showToast('Nenhum dado para compartilhar.', 'error'); return; }
-            const sorted=[...logs].sort((a,b)=>new Date(a.date)-new Date(b.date));
-            const last=sorted[sorted.length-1],first=sorted[0];
-            const drops=sorted.filter(l=>l.diff<0),gains=sorted.filter(l=>l.diff>0);
-            const health=calcHealth(),streak=calcStreak();
-            const text=`📊 RELATÓRIO DE AVALIAÇÕES GOOGLE\n━━━━━━━━━━━━━━━━━━━━━━━━\n📅 Período: ${fmtDate(first.date)} → ${fmtDate(last.date)}\n⭐ Total atual: ${last.total} avaliações\n🌟 Nota: ${last.rating??'N/D'}\n📈 Saldo: ${(last.total-first.total)>=0?'+':''}${last.total-first.total} no período\n🏥 Saúde: ${health?.icon??'—'} ${health?.label??'Insuficiente'}\n🔥 Streak: ${streak} dia(s) sem queda\n━━━━━━━━━━━━━━━━━━━━━━━━\n📉 Quedas: ${drops.length} dia(s)\n📈 Ganhos: ${gains.length} dia(s)\n${drops.length>0?`⚠️ Maior queda: ${Math.min(...drops.map(l=>l.diff))} avaliações\n`:''}${last.diff<0?`🚨 ATENÇÃO: Última leitura com queda de ${Math.abs(last.diff)} avaliações!\n`:''}\n━━━━━━━━━━━━━━━━━━━━━━━━\nMonitor de Avaliações · Google Meu Negócio`;
-            document.getElementById('shareText').value=text;
-            document.getElementById('shareModal').classList.remove('hidden');
-        };
-        window.copyShare = function () {
-            const text=document.getElementById('shareText').value;
-            navigator.clipboard.writeText(text).then(()=>showToast('✅ Texto copiado!','success')).catch(()=>{ document.getElementById('shareText').select(); document.execCommand('copy'); showToast('✅ Copiado!','success'); });
-        };
-
-        // ── UTILS ─────────────────────────────────────────────────────────────────────
-        function fmtDate(d) { const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
-
-        window.showImageById = function (logId) {
-            const entry=logs.find(l=>l.id===logId);
-            if (entry&&entry.image) { document.getElementById('modalImg').src=entry.image; document.getElementById('imageModal').classList.remove('hidden'); }
-        };
-        window.showImage = src => { document.getElementById('modalImg').src=src; document.getElementById('imageModal').classList.remove('hidden'); };
-        window.showNotes = encoded => { document.getElementById('notesModalContent').textContent=decodeURIComponent(encoded); document.getElementById('notesModal').classList.remove('hidden'); };
-
-        function showToast(msg, type='success') {
-            const toast=document.getElementById('toast');
-            document.getElementById('toastMessage').innerHTML=msg;
-            document.getElementById('toastIcon').innerHTML=type==='success'
-                ?`<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`
-                :`<svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
-            toast.classList.remove('translate-y-20','opacity-0');
-            setTimeout(()=>toast.classList.add('translate-y-20','opacity-0'),3500);
-        }
-
-        // ── STORES CONFIG ─────────────────────────────────────────────────────────────
-        const STORES = [
-            { id:'honor',   name:'Miplace Honor',   logo:'dp.jpg',    color:'#2563eb', pw:atob('SG9ub3IxMjM=') },
-            { id:'realme',  name:'Miplace Realme',  logo:'realme.jpg', color:'#16a34a', pw:atob('UmVhbG1lMTIz') },
-            { id:'xv',      name:'Miplace XV',      logo:'xv.jpg',    color:'#9333ea', pw:atob('WHYxMjM=') },
-            { id:'premium', name:'Miplace Premium', logo:'pr.jpg',    color:'#b45309', pw:atob('UHJlbWl1bTEyMw==') },
-            { id:'kassouf', name:'Miplace Kassouf', logo:'kf.jpg',    color:'#0891b2', pw:atob('S2Fzc291ZjEyMw==') },
-        ];
-
-        let currentStore = null;
-        let selectedStoreId = null;
-
-        function renderStoreList() {
-            const list=document.getElementById('storeList');
-            list.innerHTML=STORES.map(s=>`
-                <button onclick="selectStore('${s.id}')"
-                    class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-white/10 hover:border-white/30 text-left transition-all hover:scale-[1.02] active:scale-[0.98] group"
-                    style="background:rgba(255,255,255,0.07);">
-                    <img src="${s.logo}" alt="${s.name}" style="width:36px;height:36px;object-fit:cover;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">
-                    <span class="flex-1 text-white font-bold text-sm">${s.name}</span>
-                    <svg class="text-white/30 group-hover:text-white/60 transition-colors" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                </button>
-            `).join('');
-        }
-
-        window.selectStore = function (id) {
-            selectedStoreId=id;
-            const store=STORES.find(s=>s.id===id);
-            document.getElementById('loginStoreIcon').innerHTML=`<img src="${store.logo}" alt="${store.name}" style="width:64px;height:64px;object-fit:cover;border-radius:16px;margin:0 auto;display:block;box-shadow:0 4px 16px rgba(0,0,0,0.3);">`;
-            document.getElementById('loginStoreName').textContent=store.name;
-            document.getElementById('loginPwInput').value='';
-            document.getElementById('loginError').classList.add('hidden');
-            document.getElementById('storeStep').classList.add('hidden');
-            document.getElementById('passwordStep').classList.remove('hidden');
-            setTimeout(()=>document.getElementById('loginPwInput').focus(),100);
-        };
-
-        window.backToStores = function () {
-            document.getElementById('passwordStep').classList.add('hidden');
-            document.getElementById('storeStep').classList.remove('hidden');
-            selectedStoreId=null;
-        };
-
-        window.toggleLoginPw = function () {
-            const inp=document.getElementById('loginPwInput');
-            const eye=document.getElementById('loginEye');
-            if (inp.type==='password') {
-                inp.type='text';
-                eye.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
-            } else {
-                inp.type='password';
-                eye.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-            }
-        };
-
-        window.doLogin = function () {
-            if (!selectedStoreId) return;
-            const store=STORES.find(s=>s.id===selectedStoreId);
-            const typed=document.getElementById('loginPwInput').value;
-            if (typed===store.pw) {
-                currentStore=store;
-                const loginScreen=document.getElementById('loginScreen');
-                loginScreen.style.transition='opacity 0.4s ease';
-                loginScreen.style.opacity='0';
-                setTimeout(()=>loginScreen.style.display='none',400);
-                document.getElementById('storeBadge').classList.remove('hidden');
-                document.getElementById('storeBadge').classList.add('flex');
-                document.getElementById('storeBadgeIcon').innerHTML=`<img src="${store.logo}" alt="${store.name}" style="width:20px;height:20px;object-fit:cover;border-radius:5px;">`;
-                document.getElementById('storeBadgeName').textContent=store.name;
-                document.title=`Monitor · ${store.name}`;
-                init();
-                listenToStore(store);
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
-                document.getElementById('loginPwInput').value='';
-                document.getElementById('loginPwInput').focus();
-                const card=document.getElementById('passwordStep');
-                card.style.animation='shake 0.4s ease';
-                setTimeout(()=>{ card.style.animation=''; document.getElementById('loginError').classList.add('hidden'); },3000);
-            }
-        };
-
-        window.doLogout = function () {
-            const storeName=currentStore?currentStore.name:'loja';
-            if (!confirm(`Sair de ${storeName}?`)) return;
-            try { if (fbListener) { fbListener(); fbListener=null; } } catch(e) { fbListener=null; }
-            currentStore=null; selectedStoreId=null; logs=[];
-            if (dateUnlocked) { dateUnlocked=false; }
-            const hs=document.getElementById('headerStats'); if (hs) hs.classList.add('hidden');
-            const wb=document.getElementById('weeklyBar'); if (wb) wb.classList.add('hidden');
-            const hb=document.getElementById('healthBadge'); if (hb) hb.classList.add('hidden');
-            const kpi=document.getElementById('kpiRow'); if (kpi) kpi.innerHTML='';
-            if (tableBody) tableBody.innerHTML='';
-            try { if (chartInstance) { chartInstance.destroy(); chartInstance=null; } } catch(e) { chartInstance=null; }
-            try { if (donutInstance) { donutInstance.destroy(); donutInstance=null; } } catch(e) { donutInstance=null; }
-            const mainChartEl=document.getElementById('mainChart');
-            if (mainChartEl) { mainChartEl.getContext('2d').clearRect(0,0,mainChartEl.width,mainChartEl.height); }
-            const loginScreen=document.getElementById('loginScreen');
-            if (loginScreen) {
-                loginScreen.style.display='flex'; loginScreen.style.opacity='0';
-                loginScreen.style.transition='opacity 0.4s ease';
-                setTimeout(()=>loginScreen.style.opacity='1',10);
-            }
-            const pwStep=document.getElementById('passwordStep');
-            const storeStep=document.getElementById('storeStep');
-            if (pwStep) pwStep.classList.add('hidden');
-            if (storeStep) storeStep.classList.remove('hidden');
-            const badge=document.getElementById('storeBadge'); if (badge) badge.classList.add('hidden');
-            const pwInput=document.getElementById('loginPwInput'); if (pwInput) pwInput.value='';
-            document.title='Monitor de Avaliações - Google';
-        };
-
-        renderStoreList();
     </script>
-
-    <style>
-        @keyframes shake {
-            0%, 100% { transform: translateX(0) }
-            20% { transform: translateX(-8px) }
-            40% { transform: translateX(8px) }
-            60% { transform: translateX(-6px) }
-            80% { transform: translateX(6px) }
-        }
-    </style>
 </body>
 </html>
