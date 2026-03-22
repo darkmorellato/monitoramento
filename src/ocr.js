@@ -16,6 +16,44 @@ function playSound(src) {
     } catch (e) {}
 }
 
+// ═══════════════════════════════════════════════════════════════
+// PRÉ-PROCESSAMENTO COM BINARIZAÇÃO POR THRESHOLD
+// ═══════════════════════════════════════════════════════════════
+
+function preprocessImageForOCR(base64, threshold = 150) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { reject('Canvas 2D not available'); return; }
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
+                const color = grayscale > threshold ? 255 : 0;
+                data[i] = color;
+                data[i + 1] = color;
+                data[i + 2] = color;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = reject;
+        img.src = base64;
+    });
+}
+
+async function extrairTextoDaImagem(base64, threshold = 160) {
+    const imagemOtimizada = await preprocessImageForOCR(base64, threshold);
+    const { data: { text } } = await Tesseract.recognize(imagemOtimizada, 'por');
+    return text;
+}
+
 async function loadTesseract() {
     if (tesseractLoaded) return;
     if (typeof Tesseract !== 'undefined') { tesseractLoaded = true; return; }
@@ -122,7 +160,52 @@ export async function autoExtractFromImage(base64Image) {
                 const fallback = extractGoogleRatingData(data);
                 if (fallback.rating && !bestResult.rating) bestResult.rating = fallback.rating;
                 if (fallback.total && !bestResult.total) bestResult.total = fallback.total;
+                // Extração inteligente
+                const smart = extractWithSmartLogic(data);
+                if (smart.rating && !bestResult.rating) bestResult.rating = smart.rating;
+                if (smart.total && !bestResult.total) bestResult.total = smart.total;
             } catch (e) { console.error('OCR Fallback Erro:', e); }
+        }
+
+        // Camada inteligente em todos os textos coletados
+        if ((!bestResult.rating || !bestResult.total) && allTexts.length > 0) {
+            for (const txt of allTexts) {
+                if (bestResult.rating && bestResult.total) break;
+                const smart = extractWithSmartLogic({ text: txt, lines: [{ text: txt }] });
+                if (smart.rating && !bestResult.rating) bestResult.rating = smart.rating;
+                if (smart.total && !bestResult.total) bestResult.total = smart.total;
+            }
+        }
+
+        // Camada Google Meu Negócio (regex otimizado)
+        if ((!bestResult.rating || !bestResult.total) && allTexts.length > 0) {
+            for (const txt of allTexts) {
+                if (bestResult.rating && bestResult.total) break;
+                const gmn = extrairDadosGoogleMeuNegocio(txt);
+                if (gmn.nota && !bestResult.rating) bestResult.rating = gmn.nota;
+                if (gmn.totalAvaliacoes && !bestResult.total) bestResult.total = gmn.totalAvaliacoes;
+            }
+        }
+
+        // Camada binarização por threshold (120, 150, 180)
+        if (!bestResult.rating || !bestResult.total) {
+            const thresholds = [150, 120, 180];
+            for (const th of thresholds) {
+                if (bestResult.rating && bestResult.total) break;
+                try {
+                    const textoTh = await extrairTextoDaImagem(base64Image, th);
+                    allTexts.push(textoTh);
+                    const extTh = extractGoogleRatingData({ text: textoTh, lines: [{ text: textoTh }] });
+                    if (extTh.rating && !bestResult.rating) bestResult.rating = extTh.rating;
+                    if (extTh.total && !bestResult.total) bestResult.total = extTh.total;
+                    const smartTh = extractWithSmartLogic({ text: textoTh, lines: [{ text: textoTh }] });
+                    if (smartTh.rating && !bestResult.rating) bestResult.rating = smartTh.rating;
+                    if (smartTh.total && !bestResult.total) bestResult.total = smartTh.total;
+                    const gmnTh = extrairDadosGoogleMeuNegocio(textoTh);
+                    if (gmnTh.nota && !bestResult.rating) bestResult.rating = gmnTh.nota;
+                    if (gmnTh.totalAvaliacoes && !bestResult.total) bestResult.total = gmnTh.totalAvaliacoes;
+                } catch (e) { console.error('OCR Threshold Erro:', th, e); }
+            }
         }
 
         // Último fallback: tentar extrair nota dos textos brutos
@@ -130,6 +213,22 @@ export async function autoExtractFromImage(base64Image) {
             for (const txt of allTexts) {
                 const nota = extractRatingFromRawText(txt);
                 if (nota) { bestResult.rating = nota; break; }
+            }
+        }
+
+        // Regex bruta: primeiro número no formato nota
+        if (!bestResult.rating && allTexts.length > 0) {
+            for (const txt of allTexts) {
+                const nota = extrairNotaBruta(txt);
+                if (nota) { bestResult.rating = nota; break; }
+            }
+        }
+
+        // Regex bruta: total antes de avaliações
+        if (!bestResult.total && allTexts.length > 0) {
+            for (const txt of allTexts) {
+                const total = extrairTotalBruto(txt);
+                if (total) { bestResult.total = total; break; }
             }
         }
 
@@ -146,8 +245,131 @@ export async function autoExtractFromImage(base64Image) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// EXTRAÇÃO DE NOTA - Busca agressiva para textos fracos
+// EXTRAÇÃO GOOGLE MEU NEGÓCIO - Regex otimizado para o formato
 // ═══════════════════════════════════════════════════════════════
+
+function extrairDadosGoogleMeuNegocio(textoOcr) {
+    if (!textoOcr) return { nota: null, totalAvaliacoes: null };
+    const textoNormalizado = textoOcr.replace(/\s+/g, ' ');
+    const regexNota = /([1-5][.,]\d)(?=\s*.*\bavalia)/i;
+    const regexAvaliacoes = /(\d+)\s*avalia/i;
+    const matchNota = textoNormalizado.match(regexNota);
+    const matchAvaliacoes = textoNormalizado.match(regexAvaliacoes);
+    const notaFinal = matchNota ? parseFloat(matchNota[1].replace(',', '.')) : null;
+    const totalAvaliacoesFinal = matchAvaliacoes ? parseInt(matchAvaliacoes[1], 10) : null;
+    return { nota: notaFinal, totalAvaliacoes: totalAvaliacoesFinal };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REGEX BRUTA - Pega primeiro número no formato nota
+// ═══════════════════════════════════════════════════════════════
+
+function extrairNotaBruta(textoOcr) {
+    if (!textoOcr) return null;
+    const regexNotaBruta = /([1-5][.,][0-9])/;
+    const match = textoOcr.match(regexNotaBruta);
+    if (match) {
+        const nota = parseFloat(match[0].replace(',', '.'));
+        if (nota >= 1 && nota <= 5) return nota;
+    }
+    return null;
+}
+
+function extrairTotalBruto(textoOcr) {
+    if (!textoOcr) return null;
+    const m = textoOcr.match(/(\d{2,6})\s*avalia/i);
+    if (m) return parseInt(m[1], 10);
+    const m2 = textoOcr.match(/(\d{2,6})\s*review/i);
+    if (m2) return parseInt(m2[1], 10);
+    return null;
+}
+
+function extractWithSmartLogic(ocrData) {
+    const { text, lines } = ocrData;
+    let rating = null;
+    let total = null;
+
+    // ── PASSO 1: Localizar linha de avaliações ──
+    let avaliacaoLine = null;
+    const lineTexts = (lines || []).map(l => (l.text || '').trim());
+
+    for (const line of lineTexts) {
+        const lower = line.toLowerCase();
+        if (/avalia[çc]|review|google|estrela|star/.test(lower)) {
+            avaliacaoLine = line;
+            break;
+        }
+    }
+
+    // Se não encontrou linha específica, usar texto completo
+    const sourceText = avaliacaoLine || text || '';
+    const clean = sourceText.replace(/[★☆*✯✰⭐✦✧]/g, '').replace(/\s+/g, ' ').trim();
+
+    // ── PASSO 2: Extrair nota (número entre 1,0 e 5,0) ──
+    // Tratar "50" colado como "5,0", "48" como "4,8", etc.
+    const notaPatterns = [
+        // Formato normal: 5,0 ou 4.8
+        /\b([1-5][,.][0-9])\b/,
+        // Com espaços: 5 , 0
+        /\b([1-5])\s*[,.]\s*([0-9])\b/,
+        // Colado sem separador: "50" deve virar "5,0", "48" virar "4,8"
+        // Mas só se estiver próximo de palavras-chave
+        /(?:avalia|review|google|estrela|nota)[^\d]{0,20}([1-5][0-9])(?:\s|$|[^\d])/i,
+        // Invertido: nota após avaliações
+        /([1-5][0-9])(?:\s|$|[^\d])[^\d]{0,20}(?:avalia|review|google)/i,
+        // OCR com ruído: 5·0, 5-0, 5:0
+        /\b([1-5])[,.\-:;]([0-9])\b/,
+        // Próximo a estrelas já removidas, mas pode sobrar espaço
+        /\b([1-5])\s{1,3}([0-9])\b/,
+    ];
+
+    for (const regex of notaPatterns) {
+        const match = clean.match(regex);
+        if (match) {
+            let notaStr;
+            if (match[2] && !match[1].includes(',') && !match[1].includes('.')) {
+                // Caso "50" colado ou "5 0" com espaço
+                notaStr = match[1] + '.' + match[2];
+            } else {
+                notaStr = match[1].replace(',', '.');
+            }
+            const nota = parseFloat(notaStr);
+            if (!isNaN(nota) && nota >= 1.0 && nota <= 5.0) {
+                rating = nota;
+                break;
+            }
+        }
+    }
+
+    // ── PASSO 3: Extrair total de avaliações ──
+    const totalPatterns = [
+        // Padrão principal: número antes de "avaliações"
+        /(\d{1,6})\s*avalia[çc]/i,
+        // Número antes de "reviews"
+        /(\d{1,6})\s*review/i,
+        // Número antes de "no/mp/ao Google"
+        /(\d{1,6})\s*(?:no|mp|ao|em|de)\s*google/i,
+        // Número entre parênteses
+        /\((\d{1,6})\)/,
+        // Google: número
+        /google[:\s]+(\d{1,6})/i,
+        // Número grande solto (3+ dígitos)
+        /\b(\d{3,6})\b/,
+    ];
+
+    for (const regex of totalPatterns) {
+        const match = clean.match(regex);
+        if (match) {
+            const t = parseInt(match[1], 10);
+            if (t >= 1 && t <= 999999) {
+                total = t;
+                break;
+            }
+        }
+    }
+
+    return { rating, total };
+}
 
 function extractRatingFromRawText(rawText) {
     if (!rawText) return null;
@@ -321,4 +543,63 @@ export function handleDrop(e) {
     document.getElementById('uploadZone').classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) loadImageFile(file);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLIPBOARD - Extrair dados copiados do Google Maps
+// ═══════════════════════════════════════════════════════════════
+
+export async function extractFromClipboard() {
+    try {
+        const texto = await navigator.clipboard.readText();
+        if (!texto || texto.trim().length === 0) {
+            showToast('⚠️ Nenhum texto encontrado na área de transferência.', 'warn');
+            return;
+        }
+
+        // Aplicar todos os extratores no texto copiado
+        const smart = extractWithSmartLogic({ text: texto, lines: [{ text: texto }] });
+        const gmn = extrairDadosGoogleMeuNegocio(texto);
+        const raw = extractRatingFromRawText(texto);
+
+        let rating = smart.rating || gmn.nota || raw || null;
+        let total = smart.total || gmn.totalAvaliacoes || null;
+
+        // Fallback: buscar total no texto
+        if (!total) {
+            const m = texto.match(/(\d{1,6})\s*avalia/i);
+            if (m) total = parseInt(m[1], 10);
+        }
+        if (!total) {
+            const m = texto.match(/(\d{1,6})\s*review/i);
+            if (m) total = parseInt(m[1], 10);
+        }
+
+        const totalInput = document.getElementById('totalInput');
+        const ratingInput = document.getElementById('ratingInput');
+        let filled = 0;
+
+        if (total !== null && total > 0) {
+            totalInput.value = total;
+            totalInput.classList.add('ring-2', 'ring-green-400');
+            setTimeout(() => totalInput.classList.remove('ring-2', 'ring-green-400'), 2500);
+            filled++;
+        }
+        if (rating !== null && rating >= 1 && rating <= 5) {
+            ratingInput.value = rating;
+            ratingInput.classList.add('ring-2', 'ring-green-400');
+            setTimeout(() => ratingInput.classList.remove('ring-2', 'ring-green-400'), 2500);
+            filled++;
+        }
+
+        if (filled > 0) {
+            playSound('assets/voice/voice2.mp3');
+            showToast(`✅ Clipboard extraiu ${filled} dado(s)! Nota: ${rating || '?'} | Total: ${total || '?'}`, 'success');
+        } else {
+            showToast('⚠️ Não foi possível extrair dados do texto copiado.', 'warn');
+        }
+    } catch (err) {
+        console.error('Clipboard erro:', err);
+        showToast('❌ Erro ao ler clipboard. Permita o acesso.', 'error');
+    }
 }

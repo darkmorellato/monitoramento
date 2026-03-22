@@ -6,7 +6,7 @@ import { showToast, showConfirm, showImageById, showImage, showNotes, closeModal
 import { saveLogEntry, deleteRecordFromDB, clearAllDataFromDB, getDB } from './firebase.js';
 import { dateUnlocked, currentStore, setDateUnlocked, renderStoreList, selectStore, doLogout, requestDateUnlock, checkDatePw, closePwModal, togglePwVisibility } from './auth.js';
 import { renderChart, renderDonut, switchChart, setPeriod, donutFocus, currentChart } from './charts.js';
-import { loadImageFile, clearImage, extractDataFromImage, handleDragOver, handleDragLeave, handleDrop } from './ocr.js';
+import { loadImageFile, clearImage, extractDataFromImage, extractFromClipboard, handleDragOver, handleDragLeave, handleDrop } from './ocr.js';
 import { exportCSV, exportPDF, shareResume, copyShare } from './export.js';
 import { initKeyboardShortcuts } from './keys.js';
 import { fmtDate, calcHealth, calcStreak, getConsecutiveDrops, linearRegression } from './utils.js';
@@ -388,6 +388,7 @@ window.__copyShare = () => copyShare();
 window.__deleteRecord = (id) => deleteRecord(id);
 window.__clearAllData = () => clearAllData();
 window.__extractDataFromImage = () => extractDataFromImage();
+window.__extractFromClipboard = () => extractFromClipboard();
 window.__clearImage = () => clearImage();
 window.__handleDragOver = (e) => handleDragOver(e);
 window.__handleDragLeave = () => handleDragLeave();
