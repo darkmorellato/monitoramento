@@ -45,6 +45,7 @@ async function preprocessForOCR(base64, mode = 'text') {
             ctx.drawImage(img, 0, 0, w, h);
             const imageData = ctx.getImageData(0, 0, w, h);
             const data = imageData.data;
+
             if (mode === 'text') {
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i], g = data[i + 1], b = data[i + 2];
@@ -53,7 +54,7 @@ async function preprocessForOCR(base64, mode = 'text') {
                     else if (brightness < 80) { data[i] = data[i + 1] = data[i + 2] = 0; }
                     else { const val = Math.min(255, Math.max(0, ((brightness - 128) * 1.8) + 128)); data[i] = data[i + 1] = data[i + 2] = val; }
                 }
-            } else {
+            } else if (mode === 'highContrast') {
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i], g = data[i + 1], b = data[i + 2];
                     const gray = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -61,7 +62,22 @@ async function preprocessForOCR(base64, mode = 'text') {
                     if (gray > 140) val = 255; else if (gray < 60) val = 0; else val = Math.min(255, Math.max(0, ((gray - 128) * 1.6) + 128));
                     data[i] = data[i + 1] = data[i + 2] = val;
                 }
+            } else if (mode === 'boostContrast') {
+                // Modo para textos fracos: binarização adaptativa + gamma
+                const gamma = 0.6;
+                for (let i = 0; i < data.length; i += 4) {
+                    let r = data[i], g = data[i + 1], b = data[i + 2];
+                    // Gamma correction para clarear
+                    r = Math.pow(r / 255, gamma) * 255;
+                    g = Math.pow(g / 255, gamma) * 255;
+                    b = Math.pow(b / 255, gamma) * 255;
+                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    // Binarização agressiva
+                    const val = gray > 100 ? 255 : 0;
+                    data[i] = data[i + 1] = data[i + 2] = val;
+                }
             }
+
             ctx.putImageData(imageData, 0, 0);
             resolve(canvas.toDataURL('image/png'));
         };
@@ -74,9 +90,11 @@ export async function autoExtractFromImage(base64Image) {
     try { await loadTesseract(); } catch (e) { showToast('❌ Erro ao carregar OCR.', 'error'); return; }
     showToast('🔍 Extraindo dados da imagem...', 'success');
     try {
-        const modes = ['text', 'highContrast'];
+        const modes = ['boostContrast', 'text', 'highContrast'];
         const langs = ['por+eng', 'eng', 'por'];
         let bestResult = { rating: null, total: null };
+        let allTexts = [];
+
         for (const mode of modes) {
             const processedImage = await preprocessForOCR(base64Image, mode);
             for (const lang of langs) {
@@ -84,6 +102,7 @@ export async function autoExtractFromImage(base64Image) {
                     const worker = await Tesseract.createWorker(lang);
                     const { data } = await worker.recognize(processedImage);
                     await worker.terminate();
+                    allTexts.push(data.text);
                     const extracted = extractGoogleRatingData(data);
                     if (extracted.rating && !bestResult.rating) bestResult.rating = extracted.rating;
                     if (extracted.total && !bestResult.total) bestResult.total = extracted.total;
@@ -92,16 +111,28 @@ export async function autoExtractFromImage(base64Image) {
             }
             if (bestResult.rating && bestResult.total) break;
         }
+
+        // Fallback: tentar na imagem original
         if (!bestResult.rating || !bestResult.total) {
             try {
                 const worker = await Tesseract.createWorker('por+eng');
                 const { data } = await worker.recognize(base64Image);
                 await worker.terminate();
+                allTexts.push(data.text);
                 const fallback = extractGoogleRatingData(data);
                 if (fallback.rating && !bestResult.rating) bestResult.rating = fallback.rating;
                 if (fallback.total && !bestResult.total) bestResult.total = fallback.total;
             } catch (e) { console.error('OCR Fallback Erro:', e); }
         }
+
+        // Último fallback: tentar extrair nota dos textos brutos
+        if (!bestResult.rating && allTexts.length > 0) {
+            for (const txt of allTexts) {
+                const nota = extractRatingFromRawText(txt);
+                if (nota) { bestResult.rating = nota; break; }
+            }
+        }
+
         const totalInput = document.getElementById('totalInput');
         const ratingInput = document.getElementById('ratingInput');
         let filled = 0;
@@ -112,6 +143,64 @@ export async function autoExtractFromImage(base64Image) {
             showToast(`✅ OCR extraiu ${filled} dado(s)! Nota: ${bestResult.rating || '?'} | Total: ${bestResult.total || '?'}`, 'success');
         } else showToast('⚠️ Não foi possível extrair dados. Insira manualmente.', 'warn');
     } catch (e) { console.error('OCR Erro fatal:', e); showToast('❌ Erro no OCR: ' + e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXTRAÇÃO DE NOTA - Busca agressiva para textos fracos
+// ═══════════════════════════════════════════════════════════════
+
+function extractRatingFromRawText(rawText) {
+    if (!rawText) return null;
+    const txt = rawText.replace(/\s+/g, ' ').trim();
+
+    // Tentar encontrar padrão: número,virgula ou número.ponto seguido de dígito
+    const patterns = [
+        // Padrão principal: 5,0 ou 4.8
+        /\b([0-5][,.][0-9])\b/,
+        // Com espaços: 5 , 0
+        /\b([0-5])\s*[,.]\s*([0-9])\b/,
+        // OCR confuso: S,0 ou S.O (S parece 5)
+        /\b([S5s])[,.]\s*([0-9])\b/,
+        // OCR confuso: 4,8 ou 4.8 com ruído
+        /\b([0-5])[,.\-:]([0-9])\b/,
+        // Próximo a estrelas: ★ 5,0
+        /[★☆*✯✰⭐]\s*([0-5][,.][0-9])/,
+        // Depois de estrelas: ★★★★★ 5,0
+        /[★☆*✯✰⭐]{1,5}\s+([0-5][,.][0-9])/,
+        // Antes de estrelas: 5,0 ★★★★★
+        /([0-5][,.][0-9])\s+[★☆*✯✰⭐]/,
+        // Próximo a "avaliações"
+        /([0-5][,.][0-9])[^\d]*avalia/i,
+        // Próximo a "reviews"
+        /([0-5][,.][0-9])[^\d]*review/i,
+    ];
+
+    for (const regex of patterns) {
+        const match = txt.match(regex);
+        if (match) {
+            let notaStr = '';
+            if (match[2] && !match[1].includes(',') && !match[1].includes('.')) {
+                notaStr = match[1] + '.' + match[2];
+            } else {
+                notaStr = match[1].replace(',', '.');
+            }
+            // Corrigir S -> 5
+            notaStr = notaStr.replace(/[Ss]/g, '5');
+            const nota = parseFloat(notaStr);
+            if (!isNaN(nota) && nota >= 1 && nota <= 5) return nota;
+        }
+    }
+
+    // Fallback final: procurar qualquer número 1-5 seguido de vírgula/ponto e dígito
+    const allMatches = txt.match(/\b([1-5])\s*[,.]\s*([0-9])\b/g);
+    if (allMatches) {
+        for (const m of allMatches) {
+            const nota = parseFloat(m.replace(',', '.').replace(/\s/g, ''));
+            if (nota >= 1 && nota <= 5) return nota;
+        }
+    }
+
+    return null;
 }
 
 function extractGoogleRatingData(ocrData) {
