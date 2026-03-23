@@ -1,11 +1,19 @@
-const CACHE_NAME = 'monitor-v2';
+const CACHE_NAME = 'monitor-v3';
 const ASSETS = [
     '/',
     '/index.html',
     '/css/styles.css',
     '/css/components.css',
     '/css/animations.css',
-    '/src/app.js'
+    '/src/app.js',
+    '/src/auth.js',
+    '/src/firebase.js',
+    '/src/ui.js',
+    '/src/utils.js',
+    '/src/charts.js',
+    '/src/export.js',
+    '/src/keys.js',
+    '/src/ocr.js',
 ];
 
 self.addEventListener('install', e => {

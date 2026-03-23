@@ -128,6 +128,7 @@ export function doLogout(onReset) {
     currentStore = null;
     selectedStoreId = null;
     dateUnlocked = false;
+    localStorage.removeItem('lastStoreId');
     onReset();
     const loginScreen = document.getElementById('loginScreen');
     if (loginScreen) {
@@ -146,6 +147,7 @@ export function selectStore(id, onInit) {
     if (!store) return;
     currentStore = store;
     selectedStoreId = id;
+    localStorage.setItem('lastStoreId', id);
     const loginScreen = document.getElementById('loginScreen');
     loginScreen.style.transition = 'opacity 0.4s ease';
     loginScreen.style.opacity = '0';

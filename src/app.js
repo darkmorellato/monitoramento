@@ -18,6 +18,8 @@ let sortField = 'date';
 let sortDir = -1;
 let selectedMonth = new Date().getMonth();
 let selectedYear = new Date().getFullYear();
+let _lastTableHash = '';
+let _isSubmitting = false;
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -97,8 +99,19 @@ function sortBy(field) {
 
 // ── FORM SUBMIT ─────────────────────────────────────────────
 
+window.__resetSubmitState = () => {
+    _isSubmitting = false;
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) btn.disabled = false;
+};
+
 form.addEventListener('submit', async e => {
     e.preventDefault();
+    if (_isSubmitting) { console.warn('[submit] bloqueado — _isSubmitting=true'); return; }
+    _isSubmitting = true;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+    try {
     if (!currentStore) { showToast('Faça login em uma loja primeiro.', 'error'); return; }
     const date = dateInputEl.value;
     const time = document.getElementById('timeInput').value;
@@ -158,6 +171,10 @@ form.addEventListener('submit', async e => {
     const nyyyy = next.getFullYear();
     if (dateUnlocked) { dateInputEl.value = `${nyyyy}-${nmo}-${ndd}`; document.getElementById('dateDisplay').value = `${ndd}/${nmo}/${nyyyy}`; }
     showToast('✅ Registro salvo!', 'success');
+    } finally {
+        _isSubmitting = false;
+        if (submitBtn) submitBtn.disabled = false;
+    }
 });
 
 // ── DELETE / CLEAR ──────────────────────────────────────────
@@ -258,6 +275,11 @@ function updateWeekly() {
 // ── TABLE ───────────────────────────────────────────────────
 
 function renderTable() {
+    // Skip re-render if nothing changed for this month/sort
+    const tableHash = `${selectedMonth}-${selectedYear}-${sortField}-${sortDir}-${logs.map(l => `${l.id}:${l.diff}:${l.pct}`).join(',')}`;
+    if (tableHash === _lastTableHash) return;
+    _lastTableHash = tableHash;
+
     let data = logs.filter(l => {
         const d = new Date(l.date + 'T12:00:00');
         return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
@@ -304,7 +326,7 @@ function renderTable() {
             <td class="px-5 py-3 whitespace-nowrap">${pctBadge}</td>
             <td class="px-5 py-3 whitespace-nowrap">${statusBadge}</td>
             <td class="px-5 py-3 whitespace-nowrap">${notesCell}</td>
-            <td class="px-5 py-3 whitespace-nowrap">${log.image ? `<button onclick="window.__showImageById(${log.id})" class="text-blue-400 hover:text-blue-300 text-xs font-semibold underline">Ver Print</button>` : `<span class="text-gray-400 text-xs">—</span>`}</td>
+            <td class="px-5 py-3 whitespace-nowrap">${(log.image || log.imageUrl) ? `<button onclick="window.__showImageById(${log.id})" class="text-blue-400 hover:text-blue-300 text-xs font-semibold underline">Ver Print</button>` : `<span class="text-gray-400 text-xs">—</span>`}</td>
         </tr>`;
     }).join('');
 
@@ -319,7 +341,7 @@ function renderTable() {
             const ratingText = log.rating ? `<span class="font-semibold" style="color:#fbbf24;">${log.rating} ★</span>` : `<span class="text-gray-400">—</span>`;
             const actions = [];
             if (log.notes) actions.push(`<button onclick="window.__showNotes('${encodeURIComponent(log.notes)}')" class="text-xs text-blue-400 font-semibold">📝 Obs</button>`);
-            if (log.image) actions.push(`<button onclick="window.__showImageById(${log.id})" class="text-xs text-blue-400 font-semibold">🖼️ Print</button>`);
+            if (log.image || log.imageUrl) actions.push(`<button onclick="window.__showImageById(${log.id})" class="text-xs text-blue-400 font-semibold">🖼️ Print</button>`);
             return `<div class="mobile-card ${cardCls} fade-up" style="animation-delay:${i * 20}ms">
                 <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2"><span class="text-sm font-bold" style="color:#e2e8f0;">${fmtDate(log.date).substring(0, 5)}</span><span class="text-xs" style="color:#64748b;">${log.time || ''}</span></div><span class="text-xs font-bold" style="color:${statusColor};">${isDrop ? '🔻' : isGain ? '📈' : '●'} ${isDrop ? 'Queda' : isGain ? 'Ganho' : 'Neutro'}</span></div>
                 <div class="flex items-center justify-between"><div class="flex items-center gap-3"><div><div class="text-xs" style="color:#64748b;">Total</div><div class="text-lg font-black" style="color:#ffffff;">${log.total.toLocaleString()}</div></div><div><div class="text-xs" style="color:#64748b;">Variação</div><div class="text-sm font-semibold">${diffText} ${pctText}</div></div><div><div class="text-xs" style="color:#64748b;">Nota</div><div class="text-sm">${ratingText}</div></div></div>${actions.length > 0 ? `<div class="flex items-center gap-2">${actions.join('')}</div>` : ''}</div></div>`;
@@ -420,3 +442,10 @@ initKeyboardShortcuts(
 // ── BOOT ────────────────────────────────────────────────────
 
 renderStoreList();
+
+// Restaura última loja selecionada após reload
+const _savedStore = localStorage.getItem('lastStoreId');
+if (_savedStore) {
+    // Pequeno delay para o DOM do login estar pronto
+    setTimeout(() => window.__selectStore(_savedStore), 50);
+}

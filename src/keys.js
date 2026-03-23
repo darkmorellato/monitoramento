@@ -17,22 +17,22 @@ export function initKeyboardShortcuts(onSave, onExportCSV, onExportPDF) {
         // Ignorar atalhos se estiver digitando em input (exceto Esc)
         if (isInput) return;
 
-        // Ctrl+S - Salvar registro
-        if (e.ctrlKey && e.key === 's') {
+        // Ctrl+Shift+S - Salvar registro (evita conflito com "Salvar página")
+        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
             e.preventDefault();
             onSave();
             return;
         }
 
-        // Ctrl+E - Exportar CSV
-        if (e.ctrlKey && e.key === 'e') {
+        // Ctrl+Shift+E - Exportar CSV
+        if (e.ctrlKey && e.shiftKey && e.key === 'E') {
             e.preventDefault();
             onExportCSV();
             return;
         }
 
-        // Ctrl+P - Exportar PDF (sobrescreve print nativo)
-        if (e.ctrlKey && e.key === 'p') {
+        // Ctrl+Shift+P - Exportar PDF (evita conflito com "Imprimir")
+        if (e.ctrlKey && e.shiftKey && e.key === 'P') {
             e.preventDefault();
             onExportPDF();
             return;

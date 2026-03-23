@@ -63,7 +63,9 @@ export function exportPDF(logs) {
     <table><thead><tr><th>Data</th><th>Horário</th><th>Total</th><th>Nota</th><th>Variação</th><th>%</th><th>Status</th><th>Obs</th></tr></thead><tbody>${rows}</tbody></table>
     <p style="margin-top:24px;font-size:11px;color:#94a3b8;text-align:center">Monitor de Avaliações · Google Meu Negócio</p>
     <script>window.onload=()=>window.print();<\/script></body></html>`;
-    const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+    const w = window.open('', '_blank');
+    if (!w) { showToast('⚠️ Pop-up bloqueado. Permita pop-ups para exportar PDF.', 'warn'); return; }
+    w.document.write(html); w.document.close();
     showToast('📄 PDF aberto!', 'success');
 }
 

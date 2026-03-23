@@ -168,8 +168,38 @@ function extractGoogleRatingData(ocrData) {
     }
 
     if (!total) {
-        const totalMatch = allText.match(/\(\s*(\d{2,6})\s*\)/);
-        if (totalMatch) total = parseInt(totalMatch[1], 10);
+        // Parênteses completos: (558)
+        const m1 = allText.match(/\(\s*(\d{2,6})\s*\)/);
+        if (m1) total = parseInt(m1[1], 10);
+    }
+
+    if (!total) {
+        // Parênteses parciais: (558 sem fechar, ou [558], ou OCR leu como |558|
+        const m2 = allText.match(/[\(\[|]\s*(\d{2,6})\s*[\)\]|]?/);
+        if (m2) {
+            const t = parseInt(m2[1], 10);
+            if (t > 0) total = t;
+        }
+    }
+
+    if (!total) {
+        // "N avaliações" em português
+        const m3 = allText.match(/(\d{2,6})\s*avalia/i);
+        if (m3) total = parseInt(m3[1], 10);
+    }
+
+    if (!total) {
+        // Último recurso: número isolado de 3+ dígitos que não seja ano nem o rating já encontrado
+        const nums = allText.match(/\b([1-9]\d{2,4})\b/g);
+        if (nums) {
+            for (const n of nums) {
+                const v = parseInt(n, 10);
+                // Evita anos (1900-2099) e o próprio valor do rating convertido
+                const isYear = v >= 1900 && v <= 2099;
+                const isRating = rating !== null && v === Math.round(rating * 10);
+                if (!isYear && !isRating) { total = v; break; }
+            }
+        }
     }
 
     if (!rating) {
@@ -215,7 +245,7 @@ function extractGoogleRatingData(ocrData) {
             if (!rating) {
                 const intNum = lineText.match(/^([0-5])[,.]\d/);
                 if (intNum) {
-                    const r = parseFloat(intNum[1]);
+                    const r = parseFloat(intNum[0].replace(',', '.'));
                     if (r >= 0 && r <= 5) rating = r;
                 }
             }
@@ -239,12 +269,12 @@ function findRatingByStarCount(allText, starSymbols) {
 
     if (fullStars >= 5) {
         const googleMatch = allText.match(/([0-5])[,.]\d/);
-        if (googleMatch) return parseFloat(googleMatch[1]);
+        if (googleMatch) return parseFloat(googleMatch[0].replace(',', '.'));
         return 5.0;
     }
     if (fullStars >= 1 && fullStars <= 5) {
         const decimalMatch = allText.match(/([0-5])[,.]\d/);
-        if (decimalMatch) return parseFloat(decimalMatch[1].replace(',', '.'));
+        if (decimalMatch) return parseFloat(decimalMatch[0].replace(',', '.'));
         return fullStars;
     }
     const google5Match = allText.match(/Google[^\d]*([0-5])/i);

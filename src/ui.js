@@ -47,7 +47,8 @@ export function showConfirm(title, message) {
 }
 
 window.confirmAccept = function () {
-    document.getElementById('confirmModal').classList.add('hidden');
+    const modal = document.getElementById('confirmModal');
+    if (modal) modal.classList.add('hidden');
     document.body.style.overflow = '';
     if (_confirmResolve) { _confirmResolve(true); _confirmResolve = null; }
 };
@@ -62,8 +63,9 @@ window.confirmCancel = function () {
 
 export function showImageById(logId, logs) {
     const entry = logs.find(l => l.id === logId);
-    if (entry && entry.image) {
-        document.getElementById('modalImg').src = entry.image;
+    const src = entry?.imageUrl || entry?.image;
+    if (src) {
+        document.getElementById('modalImg').src = src;
         document.getElementById('imageModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
@@ -87,12 +89,16 @@ export function closeModal(el) {
 }
 
 export function closeAllModals() {
-    ['imageModal', 'notesModal', 'shareModal', 'pwModal', 'confirmModal'].forEach(id => {
+    ['imageModal', 'notesModal', 'shareModal', 'pwModal'].forEach(id => {
         const el = document.getElementById(id);
-        if (el && !el.classList.contains('hidden')) {
-            el.classList.add('hidden');
-        }
+        if (el && !el.classList.contains('hidden')) el.classList.add('hidden');
     });
+    // confirmModal precisa cancelar o Promise — usar confirmCancel em vez de só esconder
+    const confirmEl = document.getElementById('confirmModal');
+    if (confirmEl && !confirmEl.classList.contains('hidden')) {
+        if (typeof window.confirmCancel === 'function') window.confirmCancel();
+        else confirmEl.classList.add('hidden');
+    }
     document.body.style.overflow = '';
 }
 
