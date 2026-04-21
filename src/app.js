@@ -175,6 +175,10 @@ form.addEventListener('submit', async e => {
         if (hasUpdates) {
             await batch.commit();
         }
+        
+        // Atualização Otimista: sincroniza o estado local e atualiza a UI instantaneamente
+        logs = tempLogs;
+        updateAll();
     } catch (err) {
         console.error('Firestore save error:', err);
         showToast('❌ Erro ao salvar.', 'error');
