@@ -545,6 +545,22 @@
         </div>
     </div>
 
+    <!-- Loading State Modal -->
+    <div id="loadingModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-card rounded-2xl p-8 flex flex-col items-center justify-center gap-6 h-56 border border-white/10 shadow-2xl">
+            <div class="flex flex-col items-center gap-4">
+                <span class="text-xs font-medium text-yellow-500 tracking-widest uppercase">Gravando Dados</span>
+                <div class="neon-bar-container">
+                    <div class="neon-bar"></div>
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                <h3 class="text-sm font-semibold text-slate-300">Processando Registro</h3>
+                <p class="text-xs text-slate-500 mt-1">Sincronizando com o banco de dados...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- JS Scripts (módulos ES) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"
         onerror="document.body.insertAdjacentHTML('afterbegin','<div style=&quot;position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f87171;font-family:sans-serif;font-size:1rem;text-align:center;padding:2rem;&quot;>❌ Falha ao carregar Firebase (CDN offline). Verifique sua conexão e recarregue.</div>')"></script>

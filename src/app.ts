@@ -169,6 +169,9 @@ if (form) {
 
             const newEntry: LogEntry = { id: logId, date, time, total, rating: isNaN(rating) ? null : rating, diff, pct, notes, image: currentBase64Image || null };
             
+            const loadingModal = document.getElementById('loadingModal');
+            if (loadingModal) loadingModal.classList.remove('hidden');
+
             showToast('⏳ Salvando...', 'success');
             const s = getCurrentStore();
             if(s) await saveLogEntry(newEntry, s);
@@ -186,9 +189,13 @@ if (form) {
                 const _ddDisplay = document.getElementById('dateDisplay') as HTMLInputElement;
                 if(_ddDisplay) _ddDisplay.value = `${ndd}/${nmo}/${nyyyy}`; 
             }
+            
+            if (loadingModal) loadingModal.classList.add('hidden');
             showToast('✅ Registro salvo!', 'success');
         } catch (err) {
             console.error('Firestore save error:', err);
+            const loadingModal = document.getElementById('loadingModal');
+            if (loadingModal) loadingModal.classList.add('hidden');
             showToast('❌ Erro ao salvar.', 'error');
         } finally {
             _isSubmitting = false;

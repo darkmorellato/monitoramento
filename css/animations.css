@@ -63,3 +63,26 @@
 .badge-pulse { animation: badgePulse 2s ease-in-out infinite; }
 .streak-glow { animation: streak-glow 2s infinite; }
 .shake { animation: shake 0.5s ease; }
+
+/* LOADING NEON BAR */
+.neon-bar-container {
+    width: 120px;
+    height: 6px;
+    background: #1e293b;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+.neon-bar {
+    width: 40%;
+    height: 100%;
+    background: #eab308; /* Yellow 500 */
+    border-radius: 10px;
+    box-shadow: 0 0 10px #eab308, 0 0 20px #eab308;
+    position: absolute;
+    animation: neon-scan 1.5s ease-in-out infinite alternate;
+}
+@keyframes neon-scan {
+    0% { left: 0%; transform: translateX(0); }
+    100% { left: 100%; transform: translateX(-100%); }
+}
