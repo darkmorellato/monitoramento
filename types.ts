@@ -1,41 +1,42 @@
-/** @typedef {Object} LogEntry
- *  @property {number} id
- *  @property {string} date - formato YYYY-MM-DD
- *  @property {string} time - formato HH:MM
- *  @property {number} total
- *  @property {number|null} rating
- *  @property {number} diff
- *  @property {number} pct
- *  @property {string} notes
- *  @property {string|null} image - base64
- */
+export interface LogEntry {
+  id: number;
+  date: string; // formato YYYY-MM-DD
+  time: string; // formato HH:MM
+  total: number;
+  rating: number | null;
+  diff: number;
+  pct: number;
+  notes: string;
+  image: string | null; // base64
+  imageUrl?: string | null; // URL do Firestore (opcional)
+}
 
-/** @typedef {Object} Store
- *  @property {string} id
- *  @property {string} name
- *  @property {string} logo
- *  @property {string} color
- */
+export interface Store {
+  id: string;
+  name: string;
+  logo: string;
+  color: string;
+}
 
-/** @typedef {Object} HealthStatus
- *  @property {string} label
- *  @property {string} icon
- *  @property {string} cls
- */
+export interface HealthStatus {
+  label: string;
+  icon: string;
+  cls: string;
+}
 
-/** @typedef {Object} KPI
- *  @property {string} label
- *  @property {string} value
- *  @property {string} sub
- *  @property {string} icon
- */
+export interface KPI {
+  label: string;
+  value: string;
+  sub: string;
+  icon: string;
+}
 
-/** @typedef {Object} Insight
- *  @property {'drop'|'gain'|'neutral'|'warn'} type
- *  @property {string} text
- */
+export interface Insight {
+  type: 'drop' | 'gain' | 'neutral' | 'warn';
+  text: string;
+}
 
-/** @typedef {Object} Regression
- *  @property {number} slope
- *  @property {number} intercept
- */
+export interface Regression {
+  slope: number;
+  intercept: number;
+}

@@ -2,18 +2,21 @@
 // OCR - Lazy Tesseract.js, Image Processing, Data Extraction
 // ═══════════════════════════════════════════════════════════════
 
-import { showToast } from './ui.js';
+import { showToast } from '../ui';
+import { HonorStrategy } from './strategies/honor';
 
-export let currentBase64Image = null;
-export let currentMimeType = null;
+export let currentBase64Image: string | null = null;
+export let currentMimeType: string | null = null;
 let tesseractLoaded = false;
+
+declare const Tesseract: any;
 
 // ── WORKER CACHE ─────────────────────────────────────────────
 // Workers Tesseract são caros de criar (carregam WASM + dados de treino).
 // Reutilizá-los reduz drasticamente o tempo de OCR a partir da 2ª imagem.
-const _workers = {};
+const _workers: Record<string, any> = {};
 
-async function getWorker(lang, paramsKey = null, params = null) {
+async function getWorker(lang: string, paramsKey: string | null = null, params: any = null): Promise<any> {
     const cacheKey = paramsKey ? `${lang}_${paramsKey}` : lang;
     if (!_workers[cacheKey]) {
         _workers[cacheKey] = await Tesseract.createWorker(lang);
@@ -22,7 +25,7 @@ async function getWorker(lang, paramsKey = null, params = null) {
     return _workers[cacheKey];
 }
 
-function playSound(src) {
+function playSound(src: string): void {
     try {
         const audio = new Audio(src);
         audio.volume = 0.8;
@@ -34,7 +37,7 @@ function playSound(src) {
 // PRÉ-PROCESSAMENTO - Recorte focado na linha de avaliação
 // ═══════════════════════════════════════════════════════════════
 
-function cropRatingLine(base64) {
+function cropRatingLine(base64: string): Promise<string> {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -63,7 +66,7 @@ function cropRatingLine(base64) {
     });
 }
 
-function preprocessForRatingOCR(base64) {
+function preprocessForRatingOCR(base64: string): Promise<string> {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -105,13 +108,13 @@ function preprocessForRatingOCR(base64) {
 // PRÉ-PROCESSAMENTO COM BINARIZAÇÃO POR THRESHOLD
 // ═══════════════════════════════════════════════════════════════
 
-function preprocessImageForOCR(base64, threshold = 150) {
+function preprocessImageForOCR(base64: string, threshold = 150): Promise<string> {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            if (!ctx) { reject('Canvas 2D not available'); return; }
+            if (!ctx) { resolve(base64); return; }
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
@@ -128,13 +131,13 @@ function preprocessImageForOCR(base64, threshold = 150) {
             ctx.putImageData(imageData, 0, 0);
             resolve(canvas.toDataURL('image/png'));
         };
-        img.onerror = reject;
+        img.onerror = () => resolve(base64);
         img.src = base64;
     });
 }
 
 // Amplia 3x e binariza forte — para extrair "(N)" com máxima precisão
-function upscaleForParens(base64) {
+function upscaleForParens(base64: string): Promise<string> {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -161,18 +164,18 @@ function upscaleForParens(base64) {
     });
 }
 
-async function extrairTextoDaImagem(base64, threshold = 160) {
+async function extrairTextoDaImagem(base64: string, threshold = 160): Promise<string> {
     const imagemOtimizada = await preprocessImageForOCR(base64, threshold);
     const worker = await getWorker('por');
     const { data: { text } } = await worker.recognize(imagemOtimizada);
     return text;
 }
 
-async function loadTesseract() {
+async function loadTesseract(): Promise<void> {
     if (tesseractLoaded) return;
     if (typeof Tesseract !== 'undefined') { tesseractLoaded = true; return; }
     showToast('⏳ Carregando OCR (primeira vez)...', 'info');
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
         script.onload = () => { tesseractLoaded = true; resolve(); };
@@ -183,12 +186,13 @@ async function loadTesseract() {
     });
 }
 
-async function preprocessForOCR(base64, mode = 'text') {
+async function preprocessForOCR(base64: string, mode = 'text'): Promise<string> {
     return new Promise(resolve => {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
+            if(!ctx) { resolve(base64); return; }
             let w = img.width, h = img.height;
             const maxDim = mode === 'text' ? 2000 : 1800;
             if (w > maxDim || h > maxDim) {
@@ -217,16 +221,13 @@ async function preprocessForOCR(base64, mode = 'text') {
                     data[i] = data[i + 1] = data[i + 2] = val;
                 }
             } else if (mode === 'boostContrast') {
-                // Modo para textos fracos: binarização adaptativa + gamma
                 const gamma = 0.6;
                 for (let i = 0; i < data.length; i += 4) {
                     let r = data[i], g = data[i + 1], b = data[i + 2];
-                    // Gamma correction para clarear
                     r = Math.pow(r / 255, gamma) * 255;
                     g = Math.pow(g / 255, gamma) * 255;
                     b = Math.pow(b / 255, gamma) * 255;
                     const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    // Binarização agressiva
                     const val = gray > 100 ? 255 : 0;
                     data[i] = data[i + 1] = data[i + 2] = val;
                 }
@@ -239,15 +240,20 @@ async function preprocessForOCR(base64, mode = 'text') {
     });
 }
 
-export async function autoExtractFromImage(base64Image) {
+export interface OcrResult {
+    rating: number | null;
+    total: number | null;
+}
+
+export async function autoExtractFromImage(base64Image: string | null): Promise<void> {
     if (!base64Image) return;
     try { await loadTesseract(); } catch (e) { showToast('❌ Erro ao carregar OCR.', 'error'); return; }
     showToast('🔍 Extraindo dados da imagem...', 'success');
     try {
         const modes = ['boostContrast', 'text', 'highContrast'];
         const langs = ['por+eng', 'eng', 'por'];
-        let bestResult = { rating: null, total: null };
-        let allTexts = [];
+        const bestResult: OcrResult = { rating: null, total: null };
+        let allTexts: string[] = [];
 
         // ═══ CAMADA 0a: OCR completo com langs — usa extractRatingLine como PRIORIDADE ═══
         try {
@@ -396,8 +402,17 @@ export async function autoExtractFromImage(base64Image) {
 
         } // fecha if (!bestResult.rating || !bestResult.total)
 
+        // ═══ STRATEGY PATTERN: Tentar extrair usando estratégias especializadas ═══
+        const _storeId = (window as any).__currentStore?.id;
+        
+        if (_storeId === 'honor') {
+            const honorStrategy = new HonorStrategy();
+            const honorResult = honorStrategy.extract(null, allTexts);
+            if (honorResult.rating !== null && !bestResult.rating) bestResult.rating = honorResult.rating;
+            if (honorResult.total !== null && !bestResult.total) bestResult.total = honorResult.total;
+        }
+
         // ═══ OVERRIDE: Lojas Premium e Kassouf usam apenas número entre parênteses ═══
-        const _storeId = window.__currentStore && window.__currentStore.id;
         if (['premium', 'kassouf'].includes(_storeId)) {
             let totalParens = null;
 
@@ -454,11 +469,16 @@ export async function autoExtractFromImage(base64Image) {
             if (totalParens !== null) bestResult.total = totalParens;
         }
 
-        const totalInput = document.getElementById('totalInput');
-        const ratingInput = document.getElementById('ratingInput');
+        const totalInput = document.getElementById('totalInput') as HTMLInputElement;
+        const ratingInput = document.getElementById('ratingInput') as HTMLInputElement;
         let filled = 0;
-        if (bestResult.total !== null && bestResult.total > 0) { totalInput.value = bestResult.total; totalInput.classList.add('ring-2', 'ring-green-400'); setTimeout(() => totalInput.classList.remove('ring-2', 'ring-green-400'), 2500); filled++; }
-        if (bestResult.rating !== null && bestResult.rating >= 0 && bestResult.rating <= 5) {
+        if (bestResult.total !== null && bestResult.total > 0 && totalInput) { 
+            totalInput.value = String(bestResult.total); 
+            totalInput.classList.add('ring-2', 'ring-green-400'); 
+            setTimeout(() => totalInput.classList.remove('ring-2', 'ring-green-400'), 2500); 
+            filled++; 
+        }
+        if (bestResult.rating !== null && bestResult.rating >= 0 && bestResult.rating <= 5 && ratingInput) {
             ratingInput.value = bestResult.rating.toFixed(1);
             ratingInput.classList.add('ring-2', 'ring-green-400');
             setTimeout(() => ratingInput.classList.remove('ring-2', 'ring-green-400'), 2500);
@@ -468,14 +488,17 @@ export async function autoExtractFromImage(base64Image) {
             playSound('assets/voice/voice2.mp3');
             showToast(`✅ OCR extraiu ${filled} dado(s)! Nota: ${bestResult.rating || '?'} | Total: ${bestResult.total || '?'}`, 'success');
         } else showToast('⚠️ Não foi possível extrair dados. Insira manualmente.', 'warn');
-    } catch (e) { console.error('OCR Erro fatal:', e); showToast('❌ Erro no OCR: ' + e.message, 'error'); }
+    } catch (e) { 
+        console.error('OCR Erro fatal:', e); 
+        showToast('❌ Erro no OCR: ' + (e instanceof Error ? e.message : String(e)), 'error'); 
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
 // NORMALIZAÇÃO DE RUÍDO OCR - Limpa caracteres de estrelas
 // ═══════════════════════════════════════════════════════════════
 
-function normalizeOcrNoise(text) {
+function normalizeOcrNoise(text: string | null | undefined): string {
     if (!text) return '';
     return text
         // Emoji de estrela (⭐ U+2B50, 🌟, etc.) — OCR pode manter ou converter
@@ -487,7 +510,7 @@ function normalizeOcrNoise(text) {
         .replace(/[•·∙⋅◦●○◉◎⦁⦾]/g, '·');
 }
 
-function collapseStars(text) {
+function collapseStars(text: string | null | undefined): string {
     if (!text) return '';
     // Converte sequências de ★ em uma única estrela para matching
     return text.replace(/★{1,10}/g, '★');
@@ -499,7 +522,7 @@ function collapseStars(text) {
 // Aplicada para TODAS as lojas, antes de qualquer outro método
 // ═══════════════════════════════════════════════════════════════
 
-function extractRatingLine(text) {
+function extractRatingLine(text: string | null | undefined): { rating: number | null, total: number | null } {
     if (!text) return { rating: null, total: null };
 
     const lines = text.split('\n');
@@ -550,7 +573,7 @@ function extractRatingLine(text) {
 // EXTRAÇÃO GOOGLE MEU NEGÓCIO - Regex otimizado para o formato
 // ═══════════════════════════════════════════════════════════════
 
-function extrairDadosGoogleMeuNegocio(textoOcr) {
+function extrairDadosGoogleMeuNegocio(textoOcr: string | null | undefined): { nota: number | null, totalAvaliacoes: number | null } {
     if (!textoOcr) return { nota: null, totalAvaliacoes: null };
     const textoNormalizado = textoOcr.replace(/\s+/g, ' ');
     const regexNota = /([1-5][.,]\d)(?=\s*.*\bavalia)/i;
@@ -566,7 +589,7 @@ function extrairDadosGoogleMeuNegocio(textoOcr) {
 // EXTRAÇÃO DIRETA - Padrão específico "5,0 ★★★★★ (793)"
 // ═══════════════════════════════════════════════════════════════
 
-function extractDirectPattern(rawText) {
+function extractDirectPattern(rawText: string | null | undefined): { rating: number | null, total: number | null } {
     if (!rawText) return { rating: null, total: null };
 
     const normalized = normalizeOcrNoise(rawText);
@@ -603,7 +626,7 @@ function extractDirectPattern(rawText) {
 // REGEX BRUTA - Pega primeiro número no formato nota
 // ═══════════════════════════════════════════════════════════════
 
-function extrairNotaBruta(textoOcr) {
+function extrairNotaBruta(textoOcr: string | null | undefined): number | null {
     if (!textoOcr) return null;
     const regexNotaBruta = /([1-5][.,][0-9])/;
     const match = textoOcr.match(regexNotaBruta);
@@ -614,7 +637,7 @@ function extrairNotaBruta(textoOcr) {
     return null;
 }
 
-function extrairTotalBruto(textoOcr) {
+function extrairTotalBruto(textoOcr: string | null | undefined): number | null {
     if (!textoOcr) return null;
     const m = textoOcr.match(/(\d{2,6})\s*avalia/i);
     if (m) return parseInt(m[1], 10);
@@ -623,7 +646,7 @@ function extrairTotalBruto(textoOcr) {
     return null;
 }
 
-function extractWithSmartLogic(ocrData) {
+function extractWithSmartLogic(ocrData: any): { rating: number | null, total: number | null } {
     const { text, lines } = ocrData;
     let rating = null;
     let total = null;
@@ -640,7 +663,7 @@ function extractWithSmartLogic(ocrData) {
 
     // ── PASSO 1: Localizar linha de avaliações ──
     let avaliacaoLine = null;
-    const lineTexts = (lines || []).map(l => {
+    const lineTexts = (lines || []).map((l: any) => {
         const t = (l.text || '').trim();
         return collapseStars(normalizeOcrNoise(t));
     });
@@ -724,7 +747,7 @@ function extractWithSmartLogic(ocrData) {
     return { rating, total };
 }
 
-function extractRatingFromRawText(rawText) {
+function extractRatingFromRawText(rawText: string | null | undefined): number | null {
     if (!rawText) return null;
     const normalized = normalizeOcrNoise(rawText);
     const collapsed = collapseStars(normalized);
@@ -784,7 +807,7 @@ function extractRatingFromRawText(rawText) {
     return null;
 }
 
-function extractGoogleRatingData(ocrData) {
+function extractGoogleRatingData(ocrData: any): { rating: number | null, total: number | null } {
     const { text, lines, words } = ocrData;
     let rating = null, total = null;
     const rawText = text || '';
@@ -922,44 +945,48 @@ function extractGoogleRatingData(ocrData) {
     return { rating, total };
 }
 
-export function loadImageFile(file) {
+export function loadImageFile(file: File): void {
     if (!file) return;
     playSound('assets/voice/voice1.mp3');
     const reader = new FileReader();
     reader.onload = ev => {
-        currentBase64Image = ev.target.result;
+        currentBase64Image = ev.target?.result as string;
         currentMimeType = file.type;
-        document.getElementById('imagePreview').src = currentBase64Image;
-        document.getElementById('imagePreviewContainer').classList.remove('hidden');
-        document.getElementById('uploadPlaceholder').classList.add('hidden');
-        document.getElementById('imageFileName').textContent = file.name || 'imagem';
-        if (window.__currentStore) setTimeout(() => autoExtractFromImage(currentBase64Image), 100);
+        const imgPreview = document.getElementById('imagePreview') as HTMLImageElement;
+        if(imgPreview) imgPreview.src = currentBase64Image;
+        document.getElementById('imagePreviewContainer')?.classList.remove('hidden');
+        document.getElementById('uploadPlaceholder')?.classList.add('hidden');
+        const imgFileName = document.getElementById('imageFileName');
+        if(imgFileName) imgFileName.textContent = file.name || 'imagem';
+        if ((window as any).__currentStore) setTimeout(() => autoExtractFromImage(currentBase64Image), 100);
         else showToast('⚠️ Selecione uma loja primeiro para extrair dados.', 'warn');
     };
     reader.readAsDataURL(file);
 }
 
-export function clearImage() {
+export function clearImage(): void {
     currentBase64Image = null;
     currentMimeType = null;
-    const imageInput = document.getElementById('imageInput');
+    const imageInput = document.getElementById('imageInput') as HTMLInputElement;
     if (imageInput) imageInput.value = '';
-    document.getElementById('imagePreview').src = '';
-    document.getElementById('imagePreviewContainer').classList.add('hidden');
-    document.getElementById('uploadPlaceholder').classList.remove('hidden');
+    const imgPreview = document.getElementById('imagePreview') as HTMLImageElement;
+    if(imgPreview) imgPreview.src = '';
+    document.getElementById('imagePreviewContainer')?.classList.add('hidden');
+    document.getElementById('uploadPlaceholder')?.classList.remove('hidden');
 }
 
-export function extractDataFromImage() {
+export function extractDataFromImage(): void {
     if (!currentBase64Image) { showToast('⚠️ Carregue uma imagem primeiro.', 'warn'); return; }
-    if (!window.__currentStore) { showToast('⚠️ Selecione uma loja primeiro.', 'warn'); return; }
+    if (!(window as any).__currentStore) { showToast('⚠️ Selecione uma loja primeiro.', 'warn'); return; }
     autoExtractFromImage(currentBase64Image);
 }
 
-export function handleDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
-export function handleDragLeave() { document.getElementById('uploadZone').classList.remove('drag-over'); }
-export function handleDrop(e) {
+export function handleDragOver(e: DragEvent): void { e.preventDefault(); document.getElementById('uploadZone')?.classList.add('drag-over'); }
+export function handleDragLeave(): void { document.getElementById('uploadZone')?.classList.remove('drag-over'); }
+export function handleDrop(e: DragEvent): void {
     e.preventDefault();
-    document.getElementById('uploadZone').classList.remove('drag-over');
+    document.getElementById('uploadZone')?.classList.remove('drag-over');
+    if(!e.dataTransfer) return;
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) loadImageFile(file);
 }
@@ -968,7 +995,7 @@ export function handleDrop(e) {
 // CLIPBOARD - Extrair dados copiados do Google Maps
 // ═══════════════════════════════════════════════════════════════
 
-export async function extractFromClipboard() {
+export async function extractFromClipboard(): Promise<void> {
     try {
         const texto = await navigator.clipboard.readText();
         if (!texto || texto.trim().length === 0) {
@@ -994,20 +1021,24 @@ export async function extractFromClipboard() {
             if (m) total = parseInt(m[1], 10);
         }
 
-        const totalInput = document.getElementById('totalInput');
-        const ratingInput = document.getElementById('ratingInput');
+        const totalInput = document.getElementById('totalInput') as HTMLInputElement;
+        const ratingInput = document.getElementById('ratingInput') as HTMLInputElement;
         let filled = 0;
 
         if (total !== null && total > 0) {
-            totalInput.value = total;
-            totalInput.classList.add('ring-2', 'ring-green-400');
-            setTimeout(() => totalInput.classList.remove('ring-2', 'ring-green-400'), 2500);
+            if(totalInput) {
+                totalInput.value = String(total);
+                totalInput.classList.add('ring-2', 'ring-green-400');
+                setTimeout(() => totalInput.classList.remove('ring-2', 'ring-green-400'), 2500);
+            }
             filled++;
         }
         if (rating !== null && rating >= 1 && rating <= 5) {
-            ratingInput.value = rating;
-            ratingInput.classList.add('ring-2', 'ring-green-400');
-            setTimeout(() => ratingInput.classList.remove('ring-2', 'ring-green-400'), 2500);
+            if(ratingInput) {
+                ratingInput.value = String(rating);
+                ratingInput.classList.add('ring-2', 'ring-green-400');
+                setTimeout(() => ratingInput.classList.remove('ring-2', 'ring-green-400'), 2500);
+            }
             filled++;
         }
 
@@ -1022,3 +1053,4 @@ export async function extractFromClipboard() {
         showToast('❌ Erro ao ler clipboard. Permita o acesso.', 'error');
     }
 }
+

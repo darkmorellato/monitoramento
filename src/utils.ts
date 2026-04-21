@@ -2,20 +2,22 @@
 // UTILS - Funções utilitárias + Debounce
 // ═══════════════════════════════════════════════════════════════
 
-export function fmtDate(d) {
+import { LogEntry, HealthStatus, Regression } from '../types';
+
+export function fmtDate(d: string): string {
     const p = d.split('-');
     return `${p[2]}/${p[1]}/${p[0]}`;
 }
 
-export function debounce(fn, delay = 300) {
-    let timer = null;
-    return function (...args) {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn.apply(this, args), delay);
+export function debounce<T extends (...args: any[]) => void>(fn: T, delay = 300): (...args: Parameters<T>) => void {
+    let timer: number | null = null;
+    return function (this: any, ...args: Parameters<T>) {
+        if (timer !== null) clearTimeout(timer);
+        timer = window.setTimeout(() => fn.apply(this, args), delay);
     };
 }
 
-export function getConsecutiveDrops(logs) {
+export function getConsecutiveDrops(logs: LogEntry[]): number {
     let c = 0;
     for (let i = logs.length - 1; i >= 0; i--) {
         if (logs[i].diff < 0) c++; else break;
@@ -23,7 +25,7 @@ export function getConsecutiveDrops(logs) {
     return c;
 }
 
-export function linearRegression(data) {
+export function linearRegression(data: number[]): Regression | null {
     const n = data.length;
     // Mínimo 5 pontos para uma projeção confiável
     if (n < 5) return null;
@@ -36,7 +38,7 @@ export function linearRegression(data) {
     return { slope, intercept };
 }
 
-export function calcHealth(logs) {
+export function calcHealth(logs: LogEntry[]): HealthStatus | null {
     if (logs.length < 3) return null;
     const drops = logs.filter(l => l.diff < 0).length;
     const dropRatio = drops / logs.length;
@@ -50,7 +52,7 @@ export function calcHealth(logs) {
     return { label: 'Excelente', icon: '🟢', cls: 'health-excelente' };
 }
 
-export function calcStreak(logs) {
+export function calcStreak(logs: LogEntry[]): number {
     let streak = 0;
     // Conta apenas dias com crescimento real (diff > 0), não inclui dias neutros
     for (let i = logs.length - 1; i >= 0; i--) {

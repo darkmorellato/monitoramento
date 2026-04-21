@@ -2,7 +2,10 @@
 // FIREBASE - Init, Config, Firestore Helpers
 // ═══════════════════════════════════════════════════════════════
 
-import { showToast } from './ui.js';
+import { showToast } from './ui';
+import { LogEntry, Store } from '../types';
+
+declare const firebase: any;
 
 const firebaseConfig = {
     apiKey: "AIzaSyBxRJpmbWWgIcA1KkV4TgM6WLhFyVY6Hm4",
@@ -19,26 +22,24 @@ const db = firebase.firestore();
 const storage = firebase.storage ? firebase.storage() : null;
 
 // Modo offline — dados em cache mesmo sem internet
-db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+db.enablePersistence({ synchronizeTabs: true }).catch((err: any) => {
     if (err.code === 'failed-precondition') {
-        // Múltiplas abas abertas — persistência só funciona em uma por vez
         console.warn('Firestore persistence desativada: múltiplas abas abertas.');
     } else if (err.code === 'unimplemented') {
-        // Navegador não suporta (ex.: Firefox em modo privado)
         console.warn('Firestore persistence não suportada neste navegador.');
     }
 });
 
-let fbListener = null;
+let fbListener: (() => void) | null = null;
 
-export function getDB() { return db; }
+export function getDB(): any { return db; }
 
-export function storeRef(currentStore) {
+export function storeRef(currentStore: Store | null): any {
     if (!currentStore) return null;
     return db.collection('Lojas').doc(currentStore.name).collection('registros');
 }
 
-export function compressImage(base64, maxKB = 700) {
+export function compressImage(base64: string | null, maxKB = 700): Promise<string | null> {
     return new Promise(resolve => {
         if (!base64) { resolve(null); return; }
         const img = new Image();
@@ -52,7 +53,9 @@ export function compressImage(base64, maxKB = 700) {
             }
             const canvas = document.createElement('canvas');
             canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const ctx = canvas.getContext('2d');
+            if(ctx) ctx.drawImage(img, 0, 0, w, h);
+            
             let quality = 0.8;
             let result = canvas.toDataURL('image/jpeg', quality);
             while (result.length > maxKB * 1024 * 1.37 && quality > 0.2) {
@@ -66,17 +69,16 @@ export function compressImage(base64, maxKB = 700) {
     });
 }
 
-function withTimeout(promise, ms) {
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
     return Promise.race([
         promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms)),
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms)),
     ]);
 }
 
-async function uploadImageToStorage(base64, entryId, storeName) {
+async function uploadImageToStorage(base64: string, entryId: number | string, storeName: string): Promise<string | null> {
     if (!storage || !base64) return null;
     try {
-        // Converte base64 para Blob
         const [meta, data] = base64.split(',');
         const mime = meta.match(/:(.*?);/)?.[1] || 'image/jpeg';
         const binary = atob(data);
@@ -87,10 +89,9 @@ async function uploadImageToStorage(base64, entryId, storeName) {
         const path = `lojas/${storeName}/${entryId}.jpg`;
         const ref = storage.ref(path);
         
-        // Timeout reduzido para 8s: se o CORS estiver bloqueado, falha rápido para o Plano B
         await withTimeout(ref.put(blob), 8000);
         return await withTimeout(ref.getDownloadURL(), 5000);
-    } catch (err) {
+    } catch (err: any) {
         if (err.message === 'Timeout') {
             console.error(`Storage upload timeout: Possível erro de CORS ou conexão lenta.`);
         } else {
@@ -100,27 +101,24 @@ async function uploadImageToStorage(base64, entryId, storeName) {
     }
 }
 
-export async function saveLogEntry(entry, currentStore) {
+export async function saveLogEntry(entry: LogEntry, currentStore: Store): Promise<void> {
     const ref = storeRef(currentStore);
     if (!ref) return;
-    const docData = { ...entry };
+    const docData: any = { ...entry };
 
     if (entry.image) {
         if (storage) {
-            // Usa Firebase Storage — salva URL no documento
             const compressed = await compressImage(entry.image);
             const imageSource = compressed || entry.image;
             const url = await uploadImageToStorage(imageSource, entry.id, currentStore.name);
             if (url) {
-                docData.image = null;       // não salva base64 no Firestore
-                docData.imageUrl = url;     // salva apenas a URL
+                docData.image = null;
+                docData.imageUrl = url;
             } else {
-                // Fallback: tenta salvar base64 comprimido se Storage falhar
                 docData.image = compressed || null;
                 if (!compressed) showToast('⚠️ Imagem muito grande para salvar. Registro salvo sem imagem.', 'error');
             }
         } else {
-            // Storage SDK não carregou — fallback para base64 comprimido
             const compressed = await compressImage(entry.image);
             if (compressed) {
                 docData.image = compressed;
@@ -136,41 +134,40 @@ export async function saveLogEntry(entry, currentStore) {
     await ref.doc(String(entry.id)).set(docData);
 }
 
-export function listenToStore(store, onUpdate) {
+export function listenToStore(store: Store, onUpdate: (logs: LogEntry[]) => void): void {
     if (fbListener) { fbListener(); fbListener = null; }
     const ref = db.collection('Lojas').doc(store.name).collection('registros');
     showToast('⏳ Carregando dados da loja...', 'info');
-    fbListener = ref.onSnapshot(snap => {
-        const logs = snap.docs.map(d => d.data());
-        logs.sort((a, b) => new Date(a.date) - new Date(b.date));
+    fbListener = ref.onSnapshot((snap: any) => {
+        const logs = snap.docs.map((d: any) => d.data()) as LogEntry[];
+        logs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         onUpdate(logs);
-    }, err => {
+    }, (err: any) => {
         console.error('Firestore listener error:', err);
         showToast('❌ Erro ao conectar ao Firestore.', 'error');
     });
 }
 
-export function stopListener() {
+export function stopListener(): void {
     if (fbListener) { fbListener(); fbListener = null; }
 }
 
-export function deleteRecordFromDB(id, currentStore) {
+export function deleteRecordFromDB(id: string | number, currentStore: Store): void {
     const ref = storeRef(currentStore);
-    if (ref) ref.doc(String(id)).delete().catch(err => {
+    if (ref) ref.doc(String(id)).delete().catch((err: any) => {
         console.error('Firestore delete error:', err);
         showToast('❌ Erro ao remover registro.', 'error');
     });
 }
 
-export async function clearAllDataFromDB(currentStore) {
+export async function clearAllDataFromDB(currentStore: Store): Promise<void> {
     const ref = storeRef(currentStore);
     if (!ref) return;
     const snap = await ref.get();
     const docs = snap.docs;
-    // Processa em lotes de 499 (limite do Firestore é 500 por batch)
     for (let i = 0; i < docs.length; i += 499) {
         const batch = db.batch();
-        docs.slice(i, i + 499).forEach(d => batch.delete(d.ref));
-        await batch.commit().catch(err => console.error('Firestore clearAll error:', err));
+        docs.slice(i, i + 499).forEach((d: any) => batch.delete(d.ref));
+        await batch.commit().catch((err: any) => console.error('Firestore clearAll error:', err));
     }
 }

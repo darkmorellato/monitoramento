@@ -2,19 +2,20 @@
 // EXPORT - CSV, PDF, Share
 // ═══════════════════════════════════════════════════════════════
 
-import { showToast } from './ui.js';
-import { fmtDate, calcHealth, calcStreak, getConsecutiveDrops } from './utils.js';
+import { showToast } from './ui';
+import { fmtDate, calcHealth, calcStreak } from './utils';
+import { LogEntry } from '../types';
 
-export function exportCSV(logs) {
+export function exportCSV(logs: LogEntry[]): void {
     if (logs.length === 0) { showToast('Nenhum dado para exportar.', 'error'); return; }
     const sep = ';';
     const cols = ['Data', 'Horário', 'Total de Avaliações', 'Nota Média', 'Variação (Qtd)', 'Variação (%)', 'Status', 'Observações'];
     const header = cols.join(sep);
-    const rows = [...logs].sort((a, b) => new Date(a.date) - new Date(b.date)).map(l => {
+    const rows = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(l => {
         const st = l.diff < 0 ? 'Queda' : l.diff > 0 ? 'Ganho' : 'Neutro';
         const pctFmt = l.pct != null ? (l.pct > 0 ? '+' : '') + l.pct + '%' : '';
         const diffFmt = l.diff > 0 ? '+' + l.diff : String(l.diff);
-        const safe = v => `"${String(v || '').replace(/"/g, '""')}"`;
+        const safe = (v: any) => `"${String(v || '').replace(/"/g, '""')}"`;
         return [safe(fmtDate(l.date)), safe(l.time || ''), l.total, l.rating != null ? l.rating : '', diffFmt, pctFmt, st, safe(l.notes || '')].join(sep);
     }).join('\r\n');
     const blob = new Blob(['\uFEFF' + header + '\r\n' + rows], { type: 'text/csv;charset=utf-8;' });
@@ -25,9 +26,9 @@ export function exportCSV(logs) {
     showToast('📥 CSV exportado!', 'success');
 }
 
-export function exportPDF(logs) {
+export function exportPDF(logs: LogEntry[]): void {
     if (logs.length === 0) { showToast('Nenhum dado para exportar.', 'error'); return; }
-    const sorted = [...logs].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const last = sorted[sorted.length - 1], first = sorted[0];
     const drops = sorted.filter(l => l.diff < 0), gains = sorted.filter(l => l.diff > 0);
     const health = calcHealth(logs);
@@ -44,8 +45,6 @@ export function exportPDF(logs) {
             <td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;color:#64748b">${l.notes || '-'}</td>
         </tr>`;
     }).join('');
-    const totalGained = gains.reduce((s, l) => s + l.diff, 0);
-    const totalLost = Math.abs(drops.reduce((s, l) => s + l.diff, 0));
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório</title>
     <style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}h1{color:#1e40af}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#f8fafc;padding:8px 10px;text-align:left;font-weight:600;color:#64748b;border-bottom:2px solid #e2e8f0}.kpi{display:inline-block;background:#f8fafc;border-radius:8px;padding:12px 20px;margin:6px;min-width:120px}.kn{font-size:24px;font-weight:800;color:#1e40af}.kl{font-size:11px;color:#64748b;margin-top:2px}</style></head><body>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
@@ -69,21 +68,32 @@ export function exportPDF(logs) {
     showToast('📄 PDF aberto!', 'success');
 }
 
-export function shareResume(logs) {
+export function shareResume(logs: LogEntry[]): void {
     if (logs.length === 0) { showToast('Nenhum dado para compartilhar.', 'error'); return; }
-    const sorted = [...logs].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const last = sorted[sorted.length - 1], first = sorted[0];
     const drops = sorted.filter(l => l.diff < 0), gains = sorted.filter(l => l.diff > 0);
     const health = calcHealth(logs), streak = calcStreak(logs);
-    const text = `📊 RELATÓRIO DE AVALIAÇÕES GOOGLE\n━━━━━━━━━━━━━━━━━━━━━━━━\n📅 ${fmtDate(first.date)} → ${fmtDate(last.date)}\n⭐ Total: ${last.total}\n🌟 Nota: ${last.rating ?? 'N/D'}\n📈 Saldo: ${(last.total - first.total) >= 0 ? '+' : ''}${last.total - first.total}\n🏥 Saúde: ${health?.icon ?? '—'} ${health?.label ?? '—'}\n🔥 Streak: ${streak} dia(s)\n━━━━━━━━━━━━━━━━━━━━━━━━\n📉 Quedas: ${drops.length} | 📈 Ganhos: ${gains.length}\n${last.diff < 0 ? `🚨 Última queda: ${Math.abs(last.diff)} avaliações!\n` : ''}━━━━━━━━━━━━━━━━━━━━━━━━\nMonitor · Google Meu Negócio`;
-    document.getElementById('shareText').value = text;
-    document.getElementById('shareModal').classList.remove('hidden');
+    
+    const text = `📊 RELATÓRIO DE AVALIAÇÕES GOOGLE\n────────────────────────\n🗓️ ${fmtDate(first.date)} → ${fmtDate(last.date)}\n⭐ Total: ${last.total}\n🌟 Nota: ${last.rating ?? 'N/D'}\n📈 Saldo: ${(last.total - first.total) >= 0 ? '+' : ''}${last.total - first.total}\n🏥 Saúde: ${health?.icon ?? '—'} ${health?.label ?? '—'}\n🔥 Streak: ${streak} dia(s)\n────────────────────────\n📉 Quedas: ${drops.length} | 📈 Ganhos: ${gains.length}\n${last.diff < 0 ? `🚨 Última queda: ${Math.abs(last.diff)} avaliações!\n` : ''}────────────────────────\nMonitor · Google Meu Negócio`;
+    
+    const shareText = document.getElementById('shareText') as HTMLTextAreaElement;
+    if (shareText) shareText.value = text;
+    
+    const preview = document.getElementById('sharePreview');
+    if (preview) {
+        preview.innerText = text;
+    }
+    
+    document.getElementById('shareModal')?.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
-export function copyShare() {
-    const text = document.getElementById('shareText').value;
+export function copyShare(): void {
+    const shareText = document.getElementById('shareText') as HTMLTextAreaElement;
+    if(!shareText) return;
+    const text = shareText.value;
     navigator.clipboard.writeText(text)
         .then(() => showToast('✅ Texto copiado!', 'success'))
-        .catch(() => { document.getElementById('shareText').select(); document.execCommand('copy'); showToast('✅ Copiado!', 'success'); });
+        .catch(() => { shareText.select(); document.execCommand('copy'); showToast('✅ Copiado!', 'success'); });
 }

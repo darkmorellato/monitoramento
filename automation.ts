@@ -1,7 +1,8 @@
+// @ts-nocheck
 // ═══════════════════════════════════════════════════════════════
 // AUTOMAÇÃO - Browser Automation com Playwright
 // ═══════════════════════════════════════════════════════════════
-// Uso: node automation.js
+// Uso: npx tsx automation.ts
 // Requer: npm install && npx playwright install chromium
 // ═══════════════════════════════════════════════════════════════
 

@@ -1,3 +1,4 @@
+@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
@@ -22,6 +23,10 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, #6366f1, #4f46e5);
 }
+
+#sharePreview::-webkit-scrollbar { width: 4px; }
+#sharePreview::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+#sharePreview::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 10px; }
 
 /* Glassmorphism */
 .glass {
@@ -235,3 +240,7 @@ td, th { border-color: rgba(255, 255, 255, 0.08) !important; color: #ffffff; }
     .chart-controls { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .chart-controls::-webkit-scrollbar { display: none; }
 }
+
+/* Utility to hide scrollbar */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

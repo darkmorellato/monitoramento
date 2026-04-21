@@ -37,7 +37,7 @@
         <div class="w-full max-w-md relative z-10">
             <div class="text-center mb-8">
                 <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-2xl" style="background:linear-gradient(135deg,#2563eb,#4f46e5);">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"></svg>
                 </div>
                 <h1 class="text-2xl font-black text-white mb-1">Monitor de Avaliações</h1>
                 <p class="text-blue-200 text-sm">Google Meu Negócio · Miplace</p>
@@ -55,7 +55,7 @@
         <div class="max-w-screen-2xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 shrink-0">
                 <div class="bg-gradient-to-br from-blue-600 to-blue-700 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-lg">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"></svg>
                 </div>
                 <div>
                     <h1 class="text-sm font-bold text-white leading-tight">Monitor de Avaliações</h1>
@@ -78,6 +78,13 @@
                 <div id="streakBadge" class="hidden items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs font-bold">
                     🔥 <span id="streakCount">0</span>d
                 </div>
+                <div class="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                    <select id="exportScope" class="bg-transparent text-[10px] font-bold text-white/80 outline-none cursor-pointer border-none p-0 uppercase focus:ring-0">
+                        <option value="month" class="bg-[#1e293b] text-white">Mês</option>
+                        <option value="year" class="bg-[#1e293b] text-white">Ano</option>
+                        <option value="all" class="bg-[#1e293b] text-white" selected>Tudo</option>
+                    </select>
+                </div>
                 <button onclick="window.__shareResume()" title="Compartilhar" class="hidden md:flex w-8 h-8 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white/70 transition-colors">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -94,8 +101,8 @@
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>CSV
                 </button>
-                <div id="storeBadge" class="hidden items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border bg-white/10 backdrop-blur-sm border-white/20 text-white text-xs font-bold">
-                    <span id="storeBadgeIcon"></span>
+                <div id="storeBadge" class="hidden items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border backdrop-blur-sm border-white/20 text-white text-xs font-bold" style="background:rgba(255,255,255,0.15);">
+                    <img id="storeBadgeIcon" src="" alt="" style="width:20px;height:20px;border-radius:6px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">
                     <span id="storeBadgeName" class="hidden sm:inline"></span>
                 </div>
                 <button onclick="window.__doLogout()" title="Sair" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-red-500/20 text-white/70 hover:text-red-400 transition-colors">
@@ -115,10 +122,15 @@
     <!-- WEEKLY BAR -->
     <div id="weeklyBar" class="hidden max-w-screen-2xl mx-auto px-4 md:px-6 pt-3">
         <div class="card px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-            <div class="flex items-center gap-2 text-xs font-semibold" style="color:#94a3b8;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>Comparativo Semanal
+            <div class="flex items-center gap-2 text-xs font-bold" style="color:#e2e8f0;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.5));">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                    <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
+                </svg>
+                <span>Comparativo Semanal</span>
             </div>
             <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs">
                 <span style="color:#64748b;">Semana atual: <strong id="wkCurrent" style="color:#93c5fd;"></strong></span>
@@ -138,9 +150,9 @@
             <!-- FORM CARD -->
             <div class="card p-5">
                 <h2 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#e2e8f0;">
-                    <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(59,130,246,0.2);">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style="background:rgba(99,102,241,0.2);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                         </svg>
                     </span>
                     Novo Registro
@@ -149,11 +161,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold mb-1 flex items-center justify-between" style="color:#94a3b8;">
-                                <span>Data</span>
+                                <div class="flex items-center gap-1">Data</div>
                                 <button type="button" id="unlockDateBtn" onclick="window.__requestDateUnlock()" title="Desbloquear data"
                                     class="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 font-semibold transition-colors">
                                     <svg id="lockIcon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                                     </svg>
                                     <span id="lockLabel">Bloqueado</span>
                                 </button>
@@ -161,12 +173,12 @@
                             <input type="text" id="dateDisplay" readonly
                                 class="w-full px-3 py-2 text-sm border rounded-xl outline-none cursor-not-allowed font-semibold tracking-wide transition-all"
                                 placeholder="DD/MM/AAAA" style="pointer-events:none; border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.1);color:#fde68a;">
-                            <input type="date" id="dateInput" required class="sr-only">
+                            <input type="date" id="dateInput" required class="absolute opacity-0 pointer-events-none" style="width:1px; height:1px;">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1 flex items-center gap-1" style="color:#94a3b8;">
                                 Horário
-                                <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color:#4ade80;">
+                                <span class="inline-flex items-center gap-1 text-xs font-semibold ml-auto" style="color:#4ade80;">
                                     <span class="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style="background:#4ade80;"></span>Ao vivo
                                 </span>
                             </label>
@@ -179,8 +191,9 @@
 
                     <!-- Upload Zone -->
                     <div>
-                        <label class="block text-xs font-semibold mb-1" style="color:#94a3b8;">
-                            Foto da Tela <span class="font-normal" style="color:#64748b;">(print do Google Meu Negócio)</span>
+                        <label class="block text-xs font-semibold mb-1 flex items-center gap-1.5" style="color:#94a3b8;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#818cf8;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <span>Foto da Tela <span class="font-normal" style="color:#64748b;">(print do Google Meu Negócio)</span></span>
                         </label>
                         <div id="uploadZone"
                             class="upload-zone border-2 border-dashed rounded-xl cursor-pointer relative overflow-hidden"
@@ -190,7 +203,7 @@
                             <div id="uploadPlaceholder" class="flex flex-col items-center justify-center py-7 px-4 text-center">
                                 <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style="background:rgba(99,102,241,0.15);">
                                     <svg class="w-6 h-6" fill="none" viewBox="0 0 48 48" stroke="#818cf8" style="color:#818cf8;">
-                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     </svg>
                                 </div>
                                 <p class="text-xs font-semibold" style="color:#a5b4fc;">Clique ou arraste a imagem</p>
@@ -198,15 +211,15 @@
                                 <span class="mt-2.5 inline-block text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors btn-gradient">Selecionar arquivo</span>
                             </div>
                             <div id="imagePreviewContainer" class="hidden">
-                                <img id="imagePreview" class="w-full max-h-60 object-contain rounded-xl"/>
+                                <img id="imagePreview" class="w-full max-h-60 object-contain rounded-xl">
                                 <div class="absolute top-2 right-2 flex gap-1.5">
                                     <button type="button" onclick="event.stopPropagation(); window.__showImage(currentBase64Image)" title="Ampliar"
                                         class="w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-lg flex items-center justify-center transition-colors">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></svg>
                                     </button>
                                     <button type="button" onclick="event.stopPropagation(); window.__clearImage()" title="Remover"
                                         class="w-7 h-7 text-white rounded-lg flex items-center justify-center transition-colors" style="background:rgba(239,68,68,0.8);">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></svg>
                                     </button>
                                 </div>
                                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2 rounded-b-xl">
@@ -217,12 +230,12 @@
                         </div>
                         <button type="button" id="extractBtn" onclick="window.__extractDataFromImage()"
                             class="btn-blue-light ripple mt-2 w-full text-white text-sm font-bold py-3 rounded-xl flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></svg>
                             Extrair Dados
                         </button>
                         <button type="button" onclick="window.__extractFromClipboard()"
                             class="btn-green-light ripple mt-2 w-full text-sm font-bold py-3 rounded-xl flex justify-center items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></svg>
                             Colar do Google Maps
                         </button>
                     </div>
@@ -246,7 +259,7 @@
                     </div>
 
                     <button type="submit" class="btn-green-light ripple w-full text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></svg>
                         Salvar Registro
                     </button>
                 </form>
@@ -254,10 +267,10 @@
 
             <!-- INSIGHTS CARD -->
             <div class="card p-5">
-                <h2 class="text-sm font-bold flex items-center gap-2 mb-3" style="color:#e2e8f0;">
-                    <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.2);">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v3"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M3 15h6"/><path d="M6 12v6"/>
+                <h2 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#e2e8f0;">
+                    <span class="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
                         </svg>
                     </span>Análise Inteligente
                 </h2>
@@ -275,12 +288,12 @@
 
                 <!-- Main Chart -->
                 <div class="card p-5 flex flex-col">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                        <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-between gap-4 mb-4 overflow-x-auto no-scrollbar">
+                        <div class="flex items-center gap-4 shrink-0">
                             <h2 class="text-sm font-bold flex items-center gap-2" style="color:#e2e8f0;">
-                                <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(34,197,94,0.2);">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                                <span class="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style="background:rgba(34,197,94,0.2);">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.5));">
+                                        <path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
                                     </svg>
                                 </span>Gráfico de Evolução
                             </h2>
@@ -289,7 +302,7 @@
                                 Previsão
                             </label>
                         </div>
-                        <div class="flex items-center gap-2 flex-wrap chart-controls">
+                        <div class="flex items-center gap-2 shrink-0">
                             <div class="flex gap-0.5 p-1 rounded-lg" style="background:rgba(51,65,85,0.5);">
                                 <button class="filter-btn active text-xs font-semibold px-2.5 py-1" onclick="window.__setPeriod(0, this)">Tudo</button>
                                 <button class="filter-btn text-xs font-semibold px-2.5 py-1" onclick="window.__setPeriod(7, this)" style="color:#94a3b8;">7d</button>
@@ -301,7 +314,7 @@
                                 <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('variacao')">Variação</button>
                                 <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('nota')">Nota ★</button>
                                 <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('pct')">%</button>
-                                <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('comparar')">📊 Comparar</button>%</button>
+                                <button class="tab-btn text-xs font-semibold px-2.5 py-1" onclick="window.__switchChart('comparar')">📊 Comparar</button>
                             </div>
                         </div>
                     </div>
@@ -362,7 +375,7 @@
                         <h2 class="text-sm font-bold flex items-center gap-2" style="color:#e2e8f0;">
                             <span class="w-6 h-6 rounded-lg flex items-center justify-center" style="background:rgba(99,102,241,0.2);">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 10h18M3 14h18M3 18h18M3 6h18"/>
+                                    <path d="M3 10h18M3 14h18M3 18h18M3 6h18">
                                 </svg>
                             </span>Diário de Registros
                         </h2>
@@ -384,11 +397,11 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <div class="flex items-center gap-1 rounded-xl px-1 py-1" style="background:rgba(51,65,85,0.5);">
                             <button onclick="window.__prevMonth()" title="Mês anterior" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></svg>
                             </button>
                             <span id="monthLabel" class="text-xs font-bold text-white min-w-[110px] text-center select-none cursor-default"></span>
                             <button onclick="window.__nextMonth()" title="Próximo mês" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></svg>
                             </button>
                         </div>
                         <button onclick="window.__goToCurrentMonth()" title="Mês atual" class="text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors" style="background:rgba(59,130,246,0.2);color:#93c5fd;border:1px solid rgba(59,130,246,0.3);">Hoje</button>
@@ -421,7 +434,7 @@
     <div id="imageModal" class="fixed inset-0 bg-black/80 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm" onclick="window.__closeModal(this)">
         <img id="modalImg" class="max-w-full max-h-full rounded-2xl shadow-2xl object-contain border border-white/10" src="" alt="Comprovante">
         <button onclick="event.stopPropagation(); window.__closeModal(document.getElementById('imageModal'))" class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center text-white bg-black/50 rounded-full hover:bg-white/20 transition-colors">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"><path d="m6 6 12 12"></svg>
         </button>
     </div>
 
@@ -430,7 +443,7 @@
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-bold" style="color:#e2e8f0;">📝 Observações</h3>
                 <button onclick="window.__closeModal(document.getElementById('notesModal'))" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-200 transition-colors" style="background:rgba(255,255,255,0.1);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"><path d="m6 6 12 12"></svg>
                 </button>
             </div>
             <p id="notesModalContent" class="text-sm leading-relaxed whitespace-pre-wrap" style="color:#cbd5e1;"></p>
@@ -438,15 +451,26 @@
     </div>
 
     <div id="shareModal" class="fixed inset-0 bg-black/60 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm">
-        <div class="card p-6 max-w-lg w-full shadow-2xl">
+        <div class="card p-6 max-w-lg w-full shadow-2xl relative border border-white/20">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold" style="color:#e2e8f0;">📋 Compartilhar Resumo</h3>
+                <h3 class="font-bold text-lg flex items-center gap-2" style="color:#e2e8f0;">
+                    <span class="text-xl">📋</span> Compartilhar Resumo
+                </h3>
                 <button onclick="window.__closeModal(document.getElementById('shareModal'))" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-200 transition-colors" style="background:rgba(255,255,255,0.1);">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>
-            <textarea id="shareText" class="w-full h-52 text-xs font-mono border rounded-xl p-3 outline-none resize-none"></textarea>
-            <button onclick="window.__copyShare()" class="mt-3 w-full font-bold py-2.5 rounded-xl transition-colors text-sm btn-gradient">Copiar Texto</button>
+            
+            <div class="relative bg-slate-900/50 rounded-2xl border border-white/10 p-4 mb-5 overflow-hidden">
+                <div id="sharePreview" class="max-h-72 overflow-y-auto pr-3 text-sm leading-relaxed whitespace-pre-wrap font-mono" style="scrollbar-width: thin; scrollbar-color: #6366f1 rgba(255,255,255,0.05);"></div>
+                <div class="absolute right-0 top-4 bottom-4 w-1 bg-indigo-500/50 rounded-l-full"></div>
+            </div>
+
+            <textarea id="shareText" class="hidden"></textarea>
+            
+            <button onclick="window.__copyShare()" class="w-full font-bold py-3.5 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] text-base shadow-lg shadow-indigo-500/25" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">
+                Copiar Texto
+            </button>
         </div>
     </div>
 
@@ -455,7 +479,7 @@
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(245,158,11,0.2);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
                 </div>
                 <div>
@@ -469,7 +493,7 @@
                     onkeydown="if(event.key==='Enter') window.__checkDatePw()">
                 <button type="button" onclick="window.__togglePwVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2" style="color:#94a3b8;">
                     <svg id="pwEye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
                     </svg>
                 </button>
             </div>
@@ -530,11 +554,14 @@
         onerror="console.warn('Firebase Storage CDN failed — imagens não serão salvas na nuvem')"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"
         onerror="console.warn('Chart.js CDN failed — gráficos indisponíveis')"></script>
-    <script type="module" src="src/app.js"></script>
+    <script type="module" src="src/app.ts"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+            navigator.serviceWorker.getRegistrations().then(function(r) {
+                for(let reg of r) reg.unregister();
+            });
         }
     </script>
+
 </body>
 </html>

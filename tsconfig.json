@@ -3,10 +3,10 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "strict": false,
+    "strict": true,
     "noEmit": true,
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": true,
     "skipLibCheck": true,
     "types": ["vite/client"]
   },
