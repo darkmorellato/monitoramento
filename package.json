@@ -1,0 +1,12 @@
+{
+  "name": "monitor-avaliacoes",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve . -p 3000",
+    "auto": "node automation.js"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}
