@@ -26,11 +26,11 @@ async function _checkPw(val: string): Promise<boolean> {
 export let selectedStoreId: string | null = null;
 
 export const STORES: Store[] = [
-    { id: 'honor',   name: 'Miplace Honor',   logo: 'assets/dp.jpg',     color: '#2563eb' },
-    { id: 'realme',  name: 'Miplace Realme',  logo: 'assets/realme.jpg', color: '#16a34a' },
-    { id: 'xv',      name: 'Miplace XV',      logo: 'assets/xv.jpg',     color: '#9333ea' },
-    { id: 'premium', name: 'Miplace Premium', logo: 'assets/pr.jpg',     color: '#b45309' },
-    { id: 'kassouf', name: 'Miplace Kassouf', logo: 'assets/kf.jpg',     color: '#0891b2' },
+    { id: 'honor',   name: 'Miplace Honor',   logo: '/assets/dp.jpg',     color: '#2563eb' },
+    { id: 'realme',  name: 'Miplace Realme',  logo: '/assets/realme.jpg', color: '#16a34a' },
+    { id: 'xv',      name: 'Miplace XV',      logo: '/assets/xv.jpg',     color: '#9333ea' },
+    { id: 'premium', name: 'Miplace Premium', logo: '/assets/pr.jpg',     color: '#b45309' },
+    { id: 'kassouf', name: 'Miplace Kassouf', logo: '/assets/kf.jpg',     color: '#0891b2' },
 ];
 
 // Re-bind callback stored globally to allow re-attachment on logout
