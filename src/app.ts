@@ -17,9 +17,37 @@ import { initKeyboardShortcuts } from './keys';
 import { fmtDate, calcHealth, calcStreak, getConsecutiveDrops, linearRegression } from './utils';
 
 declare global {
-    interface Window {
-        [key: string]: any;
-    }
+  interface Window {
+    __updateAll: (newLogs: LogEntry[]) => void;
+    __currentStore: Store | null;
+    __selectStore: (id: string) => void;
+    __doLogout: () => void;
+    __showImageById: (id: number) => void;
+    __showNotes: (encoded: string) => void;
+    __showImage: (src: string) => void;
+    __closeModal: (el: HTMLElement) => void;
+    __sortBy: (field: string) => void;
+    __switchChart: (type: string) => void;
+    __setPeriod: (days: number, btn: HTMLElement) => void;
+    __donutFocus: (type: string) => void;
+    __deleteRecord: (id: string | number) => void;
+    __clearAllData: () => void;
+    __exportCSV: () => void;
+    __exportPDF: () => void;
+    __shareResume: () => void;
+    __copyShare: () => void;
+    __renderChart: () => void;
+    __requestDateUnlock: () => void;
+    __checkDatePw: () => void;
+    __closePwModal: () => void;
+    __togglePwVisibility: () => void;
+    __prevMonth: () => void;
+    __nextMonth: () => void;
+    __goToCurrentMonth: () => void;
+    __resetSubmitState: () => void;
+    Tesseract: typeof import('tesseract.js');
+    firebase: typeof import('firebase/app');
+  }
 }
 
 // ── STATE ───────────────────────────────────────────────────
@@ -364,8 +392,8 @@ function renderTable() {
     
     data.sort((a, b) => {
         if (sortField === 'date') return sortDir * (new Date(a.date).getTime() - new Date(b.date).getTime());
-        const valA = (a as any)[sortField] || 0;
-        const valB = (b as any)[sortField] || 0;
+const valA = (a as Record<string, number | string | null>)[sortField] as number ?? 0;
+    const valB = (b as Record<string, number | string | null>)[sortField] as number ?? 0;
         return sortDir * (Number(valA) - Number(valB));
     });
 

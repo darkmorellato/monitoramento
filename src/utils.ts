@@ -9,12 +9,12 @@ export function fmtDate(d: string): string {
     return `${p[2]}/${p[1]}/${p[0]}`;
 }
 
-export function debounce<T extends (...args: any[]) => void>(fn: T, delay = 300): (...args: Parameters<T>) => void {
-    let timer: number | null = null;
-    return function (this: any, ...args: Parameters<T>) {
-        if (timer !== null) clearTimeout(timer);
-        timer = window.setTimeout(() => fn.apply(this, args), delay);
-    };
+export function debounce<T extends (...args: unknown[]) => void>(fn: T, delay = 300): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return function (this: unknown, ...args: Parameters<T>) {
+    if (timer !== null) clearTimeout(timer);
+    timer = window.setTimeout(() => fn.apply(this, args), delay);
+  };
 }
 
 export function getConsecutiveDrops(logs: LogEntry[]): number {
