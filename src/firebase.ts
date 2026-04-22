@@ -22,15 +22,19 @@ interface FirebaseConfig {
 }
 
 function getFirebaseConfig(): FirebaseConfig {
+  // Tenta ler do import.meta.env (Vite), fallback para valores padrão se não estiverem definidos
   const config = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBxRJpmbWWgIcA1KkV4TgM6WLhFyVY6Hm4",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "monitoramento-avaliacoes.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "monitoramento-avaliacoes",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "monitoramento-avaliacoes.firebasestorage.app",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "812869615193",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:812869615193:web:ea98ca5c912d3cfcc53b48",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-R8S9L9R2RT",
   };
+
+  // Log para debug (será removido em produção)
+  console.log('[Firebase] Config projectId:', config.projectId);
 
   // Validate all required fields
   const missing = Object.entries(config)
@@ -38,6 +42,7 @@ function getFirebaseConfig(): FirebaseConfig {
     .map(([key]) => key);
 
   if (missing.length > 0) {
+    console.error('[Firebase] Missing config:', missing);
     throw new Error(
       `Missing Firebase configuration: ${missing.join(', ')}\n` +
       `Please check your .env file and ensure all VITE_FIREBASE_* variables are set.`
@@ -99,6 +104,8 @@ interface AuditLogEntry {
   recordId?: string | number;
   details?: Record<string, unknown>;
   userAgent: string;
+  // Allow additional properties for flexible logging
+  [key: string]: unknown;
 }
 
 class AuditLogger {
@@ -106,7 +113,7 @@ class AuditLogger {
   private maxLogs: number = 1000;
   private enabled: boolean = import.meta.env.VITE_ENABLE_AUDIT_LOG === 'true';
 
-  log(action: string, details?: Omit<AuditLogEntry, 'timestamp' | 'action' | 'userAgent'>): void {
+  log(action: string, details?: Record<string, unknown>): void {
     if (!this.enabled) return;
 
     const entry: AuditLogEntry = {
@@ -148,13 +155,18 @@ let storage: any = null;
 let fbListener: (() => void) | null = null;
 
 export function initializeFirebase(): void {
-  if (db) return; // Already initialized
+  if (db) {
+    console.log('[Firebase] Already initialized');
+    return;
+  }
 
   try {
     const config = getFirebaseConfig();
+    console.log('[Firebase] Initializing with project:', config.projectId);
     firebase.initializeApp(config);
     db = firebase.firestore();
     storage = firebase.storage ? firebase.storage() : null;
+    console.log('[Firebase] Firestore initialized successfully');
 
     // Modo offline — dados em cache mesmo sem internet
     db.enablePersistence({ synchronizeTabs: true }).catch((err: any) => {
@@ -256,12 +268,13 @@ async function uploadImageToStorage(
     const path = `lojas/${storeName}/${entryId}.jpg`;
     const ref = storageInstance.ref(path);
 
-    await withTimeout(ref.put(blob), 8000);
-    const url = await withTimeout(ref.getDownloadURL(), 5000);
+  await withTimeout(ref.put(blob), 8000);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const url: string = await withTimeout(ref.getDownloadURL() as Promise<any>, 5000);
 
-    auditLogger.log('image_uploaded', { storeName, entryId: String(entryId), path });
-    return url;
-  } catch (err: any) {
+  auditLogger.log('image_uploaded', { storeName, entryId: String(entryId), path: String(path) });
+  return url;
+} catch (err: any) {
     if (err.message === 'Timeout') {
       console.error(`Storage upload timeout: Possível erro de CORS ou conexão lenta.`);
     } else {
