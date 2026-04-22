@@ -1,0 +1,341 @@
+/**
+ * Accessibility (a11y) styles for WCAG 2.1 compliance
+ * Monitor de Avaliações Miplace
+ */
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: #fff;
+  padding: 8px 16px;
+  z-index: 10000;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 0 0 4px 0;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Focus visible styles - only when using keyboard */
+.user-is-tabbing *:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.user-is-tabbing *:focus {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users */
+.using-mouse *:focus {
+  outline: none;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  margin: 0;
+  padding: 8px 16px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .user-is-tabbing *:focus-visible,
+  .user-is-tabbing *:focus {
+    outline: 4px solid CanvasText;
+    outline-offset: 4px;
+  }
+
+  button,
+  [role="button"] {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus trap for modals */
+.modal-open {
+  overflow: hidden;
+}
+
+.modal-open [aria-modal="true"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+/* Button focus styles */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Error state for form fields */
+[aria-invalid="true"] {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+[aria-invalid="true"]:focus-visible {
+  outline-color: #dc2626;
+}
+
+/* Required field indicator */
+[aria-required="true"] + label::after,
+label:has(+ [required])::after {
+  content: " *";
+  color: #dc2626;
+}
+
+/* Disabled state */
+[aria-disabled="true"],
+[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Live region announcements */
+[aria-live="polite"],
+[aria-live="assertive"] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Landmark regions */
+[role="banner"] {
+  position: relative;
+}
+
+[role="navigation"] {
+  position: relative;
+}
+
+[role="main"] {
+  outline: none;
+}
+
+[role="complementary"] {
+  position: relative;
+}
+
+[role="contentinfo"] {
+  position: relative;
+}
+
+/* Table accessibility */
+table {
+  border-collapse: collapse;
+}
+
+caption {
+  text-align: left;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+th[scope="col"],
+th[scope="row"] {
+  font-weight: 600;
+}
+
+/* Link styles */
+a {
+  text-decoration: underline;
+}
+
+a:hover,
+a:focus {
+  text-decoration: none;
+}
+
+/* List accessibility */
+[role="list"] {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+[role="listitem"] {
+  display: list-item;
+}
+
+/* Alert/Alertdialog styles */
+[role="alert"] {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid #dc2626;
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+[role="alert"][aria-live="polite"] {
+  border-left-color: #2563eb;
+  background-color: #eff6ff;
+  color: #1e40af;
+}
+
+/* Dialog styles */
+[role="dialog"],
+[role="alertdialog"] {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 1.5rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+[role="dialog"]::backdrop,
+[role="alertdialog"]::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Checkbox/Radio focus */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Menu styles */
+[role="menu"] {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+[role="menuitem"] {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+[role="menuitem"]:hover,
+[role="menuitem"]:focus {
+  background-color: #f3f4f6;
+}
+
+[role="menuitem"][aria-selected="true"] {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+/* Tab styles */
+[role="tablist"] {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+[role="tab"] {
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+[role="tab"][aria-selected="true"] {
+  border-bottom-color: #2563eb;
+  color: #2563eb;
+}
+
+[role="tab"]:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #2563eb;
+}
+
+/* Progress indicator */
+[role="progressbar"] {
+  width: 100%;
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+[role="progressbar"] > div {
+  height: 100%;
+  background-color: #2563eb;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+/* Visually hidden but accessible */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Print styles */
+@media print {
+  .skip-link,
+  [role="navigation"],
+  button:not([type="submit"]) {
+    display: none !important;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+}

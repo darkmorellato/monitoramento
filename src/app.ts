@@ -15,16 +15,46 @@ import { currentBase64Image, loadImageFile, clearImage, extractDataFromImage, ex
 import { exportCSV, exportPDF, shareResume, copyShare } from './export';
 import { initKeyboardShortcuts } from './keys';
 import { fmtDate, calcHealth, calcStreak, getConsecutiveDrops, linearRegression } from './utils';
+import type { LogEntry, Store } from '../types';
 
 declare global {
-    interface Window {
-        [key: string]: any;
-    }
+  interface Window {
+    __updateAll: (newLogs: LogEntry[]) => void;
+    __currentStore: Store | null;
+    __selectStore: (id: string) => void;
+    __doLogout: () => void;
+    __showImageById: (id: number) => void;
+    __showNotes: (encoded: string) => void;
+    __showImage: (src: string) => void;
+    __closeModal: (el: HTMLElement) => void;
+    __sortBy: (field: string) => void;
+    __switchChart: (type: string) => void;
+    __setPeriod: (days: number, btn: HTMLElement) => void;
+    __donutFocus: (type: string) => void;
+    __deleteRecord: (id: string | number) => void;
+    __clearAllData: () => void;
+    __exportCSV: () => void;
+    __exportPDF: () => void;
+    __shareResume: () => void;
+    __copyShare: () => void;
+    __renderChart: () => void;
+    __requestDateUnlock: () => void;
+    __checkDatePw: () => void;
+    __closePwModal: () => void;
+    __togglePwVisibility: () => void;
+    __prevMonth: () => void;
+    __nextMonth: () => void;
+    __goToCurrentMonth: () => void;
+    __resetSubmitState: () => void;
+  // External libraries loaded via CDN
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Tesseract: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  firebase: any;
+  }
 }
 
 // ── STATE ───────────────────────────────────────────────────
-
-import { LogEntry } from '../types';
 
 let logs: LogEntry[] = [];
 let sortField: string = 'date';
@@ -167,7 +197,7 @@ if (form) {
             const diff = prevLog ? total - prevLog.total : 0;
             const pct = prevLog && prevLog.total !== 0 ? parseFloat(((diff / prevLog.total) * 100).toFixed(2)) : 0;
 
-            const newEntry: LogEntry = { id: logId, date, time, total, rating: isNaN(rating) ? null : rating, diff, pct, notes, image: currentBase64Image || null };
+            const newEntry: LogEntry = { id: logId, date, time, total, rating: isNaN(rating) ? null : rating, diff, pct, notes, image: currentBase64Image || null, imageUrl: null };
             
             const loadingModal = document.getElementById('loadingModal');
             if (loadingModal) loadingModal.classList.remove('hidden');
@@ -362,12 +392,14 @@ function renderTable() {
         return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
     
-    data.sort((a, b) => {
-        if (sortField === 'date') return sortDir * (new Date(a.date).getTime() - new Date(b.date).getTime());
-        const valA = (a as any)[sortField] || 0;
-        const valB = (b as any)[sortField] || 0;
-        return sortDir * (Number(valA) - Number(valB));
-    });
+  data.sort((a, b) => {
+    if (sortField === 'date') return sortDir * (new Date(a.date).getTime() - new Date(b.date).getTime());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const valA = (a as any)[sortField] as number ?? 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const valB = (b as any)[sortField] as number ?? 0;
+    return sortDir * (Number(valA) - Number(valB));
+  });
 
     // Filtros de contagem para o cabeçalho da tabela (referente ao mês selecionado)
     const dc = document.getElementById('dropCount'), gc = document.getElementById('gainCount');
