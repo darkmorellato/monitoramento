@@ -1,14 +1,142 @@
 {
-    "name": "Monitor de Avaliações",
-    "short_name": "Monitor",
-    "description": "Sistema de monitoramento de avaliações Google Meu Negócio",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#0f172a",
-    "theme_color": "#2563eb",
-    "orientation": "any",
-    "icons": [
-        { "src": "assets/icone/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
-        { "src": "assets/icone/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
-    ]
+  "name": "Monitor de Avaliações Miplace",
+  "short_name": "Monitor",
+  "description": "Sistema profissional de monitoramento de avaliações do Google Meu Negócio com OCR e análise inteligente",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "assets/icone/android-chrome-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icone/android-chrome-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icone/android-chrome-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icone/android-chrome-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icone/android-chrome-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icone/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icone/android-chrome-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icone/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Adicionar Registro",
+      "short_name": "Novo",
+      "description": "Adicionar novo registro de avaliação",
+      "url": "/?action=new",
+      "icons": [
+        {
+          "src": "assets/icone/shortcut-add.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Ver Gráficos",
+      "short_name": "Gráficos",
+      "description": "Visualizar gráficos e análises",
+      "url": "/?action=charts",
+      "icons": [
+        {
+          "src": "assets/icone/shortcut-charts.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Exportar Dados",
+      "short_name": "Exportar",
+      "description": "Exportar dados em CSV ou PDF",
+      "url": "/?action=export",
+      "icons": [
+        {
+          "src": "assets/icone/shortcut-export.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/screenshots/dashboard-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard do Monitor de Avaliações"
+    },
+    {
+      "src": "assets/screenshots/mobile-dashboard.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Dashboard em dispositivo móvel"
+    },
+    {
+      "src": "assets/screenshots/charts-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Gráficos de análise de avaliações"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "web",
+      "url": "https://monitor.miplace.com.br/",
+      "id": "monitor.miplace.com.br"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {},
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "id": "monitor.miplace.com.br",
+  "note_taking": {
+    "new_note_url": "/?action=new-note"
+  }
 }

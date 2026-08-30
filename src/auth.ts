@@ -84,7 +84,7 @@ export function togglePwVisibility(): void {
     }
 }
 
-let _unlockTimeout: any = null;
+let _unlockTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function unlockDate(): void {
     const dd = document.getElementById('dateDisplay') as HTMLInputElement;

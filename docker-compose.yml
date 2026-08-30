@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: monitor-avaliacoes
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+      - VITE_APP_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - monitor-network
+
+  # Firebase Emulator for local development
+  firebase-emulator:
+    image: spine3/firebase-emulator:latest
+    container_name: firebase-emulator
+    ports:
+      - "8080:8080"   # Firestore
+      - "4000:4000"   # Emulator UI
+      - "9099:9099"   # Auth
+      - "5001:5001"   # Functions
+      - "9199:9199"   # Storage
+    volumes:
+      - ./firebase.json:/firebase.json:ro
+    environment:
+      - FIREBASE_PROJECT_ID=monitoramento-avaliacoes
+    networks:
+      - monitor-network
+    profiles:
+      - dev
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: monitor-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - monitor-network
+    profiles:
+      - cache
+
+networks:
+  monitor-network:
+    driver: bridge
+
+volumes:
+  redis-data:

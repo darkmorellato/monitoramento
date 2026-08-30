@@ -2,20 +2,124 @@
 <html lang="pt-BR" class="dark">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor de Avaliações - Google</title>
-    <script src="https://cdn.tailwindcss.com" onerror="console.warn('Tailwind CDN failed — estilos podem estar ausentes')"></script>
-    <!-- Firebase e Chart.js carregados antes do módulo -->
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/animations.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2563eb">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/icone/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icone/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/assets/icone/favicon-16x16.png">
-    <link rel="shortcut icon" href="/assets/icone/favicon.ico">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!-- ============================================
+       SEO & Meta Tags - Item 8: SEO
+       ============================================ -->
+
+  <!-- Primary Meta Tags -->
+  <title>Monitor de Avaliações Miplace - Sistema de Gestão Google Meu Negócio</title>
+  <meta name="title" content="Monitor de Avaliações Miplace - Sistema de Gestão Google Meu Negógio">
+  <meta name="description" content="Sistema profissional de monitoramento de avaliações do Google Meu Negócio. Análise em tempo real, OCR automatizado, relatórios detalhados e insights inteligentes para gestão de reputação.">
+  <meta name="keywords" content="google meu negócio, avaliações, monitoramento, gestão de reputação, ocr, análise de dados, miplace, google reviews, reputação online">
+  <meta name="author" content="Miplace">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow">
+  <meta name="bingbot" content="index, follow">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://monitor.miplace.com.br/">
+
+  <!-- Language Alternates -->
+  <link rel="alternate" hreflang="pt-BR" href="https://monitor.miplace.com.br/">
+  <link rel="alternate" hreflang="x-default" href="https://monitor.miplace.com.br/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://monitor.miplace.com.br/">
+  <meta property="og:title" content="Monitor de Avaliações Miplace">
+  <meta property="og:description" content="Sistema profissional de monitoramento de avaliações do Google Meu Negócio. Análise em tempo real e insights inteligentes.">
+  <meta property="og:image" content="https://monitor.miplace.com.br/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Dashboard do Monitor de Avaliações Miplace mostrando gráficos e métricas">
+  <meta property="og:site_name" content="Monitor de Avaliações Miplace">
+  <meta property="og:locale" content="pt_BR">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://monitor.miplace.com.br/">
+  <meta property="twitter:title" content="Monitor de Avaliações Miplace">
+  <meta property="twitter:description" content="Sistema profissional de monitoramento de avaliações do Google Meu Negócio. Análise em tempo real e insights inteligentes.">
+  <meta property="twitter:image" content="https://monitor.miplace.com.br/assets/og-image.png">
+  <meta property="twitter:image:alt" content="Dashboard do Monitor de Avaliações Miplace">
+
+  <!-- Structured Data / JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Monitor de Avaliações Miplace",
+    "description": "Sistema profissional de monitoramento de avaliações do Google Meu Negócio",
+    "url": "https://monitor.miplace.com.br/",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Miplace",
+      "url": "https://miplace.com.br/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Miplace",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://monitor.miplace.com.br/assets/logo.png"
+      }
+    }
+  }
+  </script>
+
+  <!-- Mobile App Capable -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Monitor Miplace">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Preconnect to external domains -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- DNS Prefetch -->
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+  <!-- Security Headers (meta equivalent for browsers) -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com" onerror="console.warn('Tailwind CDN failed — estilos podem estar ausentes')"></script>
+
+  <!-- Firebase e Chart.js carregados antes do módulo -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="src/accessibility/a11y.css">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icone/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icone/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/icone/favicon-16x16.png">
+  <link rel="shortcut icon" href="/assets/icone/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/assets/icone/favicon.svg">
+
+  <!-- Safari Pinned Tab -->
+  <link rel="mask-icon" href="/assets/icone/safari-pinned-tab.svg" color="#2563eb">
 </head>
 
 <body class="text-gray-800 antialiased min-h-screen">
